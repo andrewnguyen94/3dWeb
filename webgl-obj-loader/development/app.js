@@ -14,6 +14,7 @@ app.mvMatrix = mat4.create();
 app.mvMatrixStack = [];
 app.pMatrix = mat4.create();
 app.camera = mat4.create();
+var texCoordBuffer = null;
 
 var reader = new FileReader();
 var objString = "";
@@ -133,10 +134,18 @@ function initShaders(){
         }
     }
 
+    shaderProgram.texcoordLocation = gl.getAttribLocation(shaderProgram, "a_texcoord");
+    console.log(shaderProgram.texcoordLocation);
+    if(shaderProgram.texcoordLocation != -1){
+        gl.enableVertexAttribArray(shaderProgram.texcoordLocation);
+    }else{
+        console.warn('Shader attribute atexcoord not found in shader. Is it undeclared or unused in the shader code?');
+    }
     shaderProgram.pMatrixUniform = gl.getUniformLocation(shaderProgram, "uPMatrix");
     shaderProgram.mvMatrixUniform = gl.getUniformLocation(shaderProgram, "uMVMatrix");
     shaderProgram.nMatrixUniform = gl.getUniformLocation(shaderProgram, "uNMatrix");
     shaderProgram.reverseLightDirectionLocation = gl.getUniformLocation(shaderProgram, "u_reverseLightDirection");
+    shaderProgram.textureLocation = gl.getUniformLocation(shaderProgram, "u_texture");
 
     shaderProgram.applyAttributePointers = function(model) {
         const layout = model.mesh.vertexBuffer.layout;
@@ -171,6 +180,17 @@ function drawObject(model){
     gl.bindBuffer(gl.ARRAY_BUFFER, model.mesh.vertexBuffer);
     shaderProgram.applyAttributePointers(model);
 
+//  texture
+    // gl.enableVertexAttribArray(shaderProgram.texcoordLocation);
+    gl.bindBuffer(gl.ARRAY_BUFFER, texCoordBuffer);
+    var size = 2;
+    var type = gl.FLOAT;
+    var normalize = false;
+    var stride = 0;
+    var offset = 0;
+    gl.vertexAttribPointer(shaderProgram.texcoordLocation, size, type, normalize, stride, offset);
+//end texture
+
     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, model.mesh.indexBuffer);
     setMatrixUniforms();
     gl.drawElements(gl.TRIANGLES, model.mesh.indexBuffer.numItems, gl.UNSIGNED_SHORT, 0);
@@ -193,10 +213,22 @@ function setMatrixUniforms(){
     gl.uniformMatrix4fv(shaderProgram.pMatrixUniform, false, app.pMatrix);
     gl.uniformMatrix4fv(shaderProgram.mvMatrixUniform, false, app.mvMatrix);
     gl.uniform3fv(shaderProgram.reverseLightDirectionLocation, normalize([0,0,-5]));
+    gl.uniform1i(shaderProgram.textureLocation, 0);
 
     var normalMatrix = mat3.create();
     mat3.normalFromMat4(normalMatrix, app.mvMatrix);
     gl.uniformMatrix3fv(shaderProgram.nMatrixUniform, false, normalMatrix);
+}
+
+function isPowerOf2(value) {
+  return (value & (value - 1)) == 0;
+}
+
+
+function setTextCoord(gl, textures){
+    gl.bufferData(gl.ARRAY_BUFFER,
+        new Float32Array(textures),
+        gl.STATIC_DRAW);
 }
 
 function initBuffers(){
@@ -210,13 +242,13 @@ function initBuffers(){
 
     // initialize the mesh's buffers
     for (var mesh in app.meshes){
-        console.log(app.meshes[mesh]);
-        // console.log(mesh, 111);
+        var test = new Float32Array(app.meshes[mesh].textures);
+        console.log(test);
+        // console.log(app.meshes[mesh].textures);
         // Create the vertex buffer for this mesh
         var vertexBuffer = gl.createBuffer();
         gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer);
         var vertexData = app.meshes[mesh].makeBufferData(layout);
-        // console.log(vertexData, 222);
         gl.bufferData(gl.ARRAY_BUFFER, vertexData, gl.STATIC_DRAW);
         vertexBuffer.numItems = vertexData.numItems;
         vertexBuffer.layout = layout;
@@ -225,11 +257,35 @@ function initBuffers(){
         // Create the index buffer for this mesh
         var indexBuffer = gl.createBuffer();
         gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer);
-        var indexData = app.meshes[mesh].makeIndexBufferData()
-        // console.log(indexData, 333);
+        var indexData = app.meshes[mesh].makeIndexBufferData();
         gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, indexData, gl.STATIC_DRAW);
         indexBuffer.numItems = indexData.numItems;
         app.meshes[mesh].indexBuffer = indexBuffer;
+
+        // provide texture coordinates for the rectangle.
+        texCoordBuffer = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, texCoordBuffer);
+        // set text coords
+        setTextCoord(gl, app.meshes[mesh].textures);
+
+        var texture = gl.createTexture();
+        gl.bindTexture(gl.TEXTURE_2D, texture);
+        // Fill the texture with a 1x1 blue pixel.
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 1, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE,
+                new Uint8Array([0, 0, 255, 255]));
+        var image = new Image();
+        image.addEventListener('load', function(){
+            gl.bindTexture(gl.TEXTURE_2D, texture);
+            gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA,gl.UNSIGNED_BYTE, image);
+            if(isPowerOf2(image.width) && isPowerOf2(image.height)){
+                gl.generateMipmap(gl.TEXTURE_2D);
+            }else{
+                gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+                gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+                gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+            }
+        });
+        image.src = "http://123.cnviet.net/wp-content/uploads/2018/01/" + app.meshes[mesh].materialsByIndex[0].mapDiffuse.filename;
 
         // var materialsindex = gl.createBuffer();
 
@@ -508,6 +564,22 @@ function tick(){
     animate();
 }
 
+var keys = {37: 1, 38: 1, 39: 1, 40: 1};
+
+function preventDefault(e) {
+  e = e || window.event;
+  if (e.preventDefault)
+      e.preventDefault();
+  e.returnValue = false;  
+}
+
+function preventDefaultForScrollKeys(e) {
+    if (keys[e.keyCode]) {
+        preventDefault(e);
+        return false;
+    }
+}
+
 
 function handleMouseDown(event){
     isDown = true;
@@ -573,6 +645,7 @@ function handleMouseMove(event){
         // console.log("down middle");
     }
 }
+var scroll_state = 0;
 
 function handleOnWheel(event){
     if(event.wheelDelta < 0 ){
@@ -605,7 +678,8 @@ function webGLStart(meshes){
     document.onmouseup = handleMouseUp;
     canvas.onmousemove = handleMouseMove;
     document.onmousemove = handleMouseMoveDocument;
-    canvas.onwheel = handleOnWheel;
+    // canvas.addEventListener("scroll", handleOnWheel);
+    canvas.addEventListener('wheel', handleOnWheel);
 
     tick();
 
@@ -622,8 +696,8 @@ function webGLStart(meshes){
 //     let p = OBJ.downloadModels([
 //         {
 //             name: 'die',
-//             obj: 'http://123.cnviet.net/wp-content/uploads/2017/12/tesst.obj',
-//             mtl: 'http://123.cnviet.net/wp-content/uploads/2017/12/tesst.mtl',
+//             obj: 'http://123.cnviet.net/wp-content/uploads/2018/01/zimCreateArchive_aaa.obj',
+//             mtl: 'http://123.cnviet.net/wp-content/uploads/2018/01/zimCreateArchive_aaa.mtl',
 //         }// ,
 //         // {
 //             // obj: '/development/models/suzanne.obj'
@@ -645,6 +719,7 @@ var openFile = function(event) {
     var reader = new FileReader();
     var models = {};
     reader.onload = function(){
+        console.log(reader);
         if(count == 0){
             text_obj = reader.result;
         }else if(count == 1){
