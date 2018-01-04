@@ -135,7 +135,6 @@ function initShaders(){
     }
 
     shaderProgram.texcoordLocation = gl.getAttribLocation(shaderProgram, "a_texcoord");
-    console.log(shaderProgram.texcoordLocation);
     if(shaderProgram.texcoordLocation != -1){
         gl.enableVertexAttribArray(shaderProgram.texcoordLocation);
     }else{
@@ -243,7 +242,6 @@ function initBuffers(){
     // initialize the mesh's buffers
     for (var mesh in app.meshes){
         var test = new Float32Array(app.meshes[mesh].textures);
-        console.log(test);
         // console.log(app.meshes[mesh].textures);
         // Create the vertex buffer for this mesh
         var vertexBuffer = gl.createBuffer();
@@ -719,7 +717,6 @@ var openFile = function(event) {
     var reader = new FileReader();
     var models = {};
     reader.onload = function(){
-        console.log(reader);
         if(count == 0){
             text_obj = reader.result;
         }else if(count == 1){
@@ -731,6 +728,13 @@ var openFile = function(event) {
         // objString = obj.innerHTML;
         // console.log(objString);
         if(count == 1){
+            let textures = getTexturesCoord([
+                {
+                    name : 'die',
+                    obj : text_obj,
+                    mtl : text_mtl,
+                }
+            ]);
             let p = loadModels([
                 {
                     name : 'die',
@@ -752,7 +756,10 @@ var openFile = function(event) {
     reader.readAsText(input.files[0]);
 };
 
+var test = null;
+
 function loadModels(model){
+    test = model[0].obj;
   const finished = [];
   const parsed = [];
   options.enableWTextureCoord = true;
@@ -783,5 +790,114 @@ function loadModels(model){
       return models;
 
   });
+}
+
+function getTexturesCoord(model){
+    const USE_MATERIAL_RE = /^usemtl/;
+    const TEXTURE_RE = /^vt\s/;
+    const FACE_RE = /^f\s/;
+    const WHITESPACE_RE = /\s+/;
+    const NEW_MTL = /^newmtl/;
+    const MAP_KD = /^map_Kd/;
+    const MAP_BUMP = /^map_bump/;
+    let name = model[0].name;
+    let obj = model[0].obj;
+    let mtl = model[0].mtl;
+    const lines_obj = obj.split('\n');
+    const lines_mtl = mtl.split('\n');
+
+    var textures = [];
+    var tmp = {};
+    tmp.name = "";
+    tmp.src = [];
+    tmp.vt = [];
+    tmp.isText = false;
+    tmp.texture_buff = [];
+
+    var tmp_vt_all = [];
+
+    var count_vt = 1;
+
+    for (let i = 0; i < lines_obj.length; i++) {
+        const line = lines_obj[i].trim();
+        const elements = line.split(WHITESPACE_RE);
+        elements.shift(); 
+        var c = false;
+
+        if(USE_MATERIAL_RE.test(line)){
+            c = true;
+            for(let j = 0; j < elements.length; j++){
+                if(j < elements.length - 1){
+                    tmp.name += elements[j] + " ";
+                }else{
+                    tmp.name += elements[j];
+                }
+            }
+            for(let k = 0; k < lines_mtl.length; k++){
+                const line_mtl = lines_mtl[k].trim();
+                const elements_mtl = line_mtl.split(WHITESPACE_RE);
+                elements_mtl.shift();
+                var count = 0;
+                if(NEW_MTL.test(line_mtl)){
+                    count = k;
+                    let tmp1 = "";
+                    for(let m = 0; m < elements_mtl.length; m++){
+                        if(m < elements_mtl.length - 1){
+                            tmp1 += elements_mtl[m] + " ";
+                        }else{
+                            tmp1 += elements_mtl[m];
+                        }
+                    }
+                    if(tmp1 === tmp.name){
+                        continue;
+                    } 
+                }
+                if(count != 0 && k == (count + 5)){
+                    if(MAP_BUMP.test(line_mtl) || MAP_KD.test(line_mtl)){
+                        tmp.isText = true;
+                        for(let n = 0; n < elements_mtl.length ; n++){
+                            tmp.src.push(elements_mtl[n]);
+                        }
+                    }
+                }
+
+            }
+        }
+        if(TEXTURE_RE.test(line)){
+            for(let j = 0; j < elements.length; j++){
+                let t = {};
+                t.elm = elements[j];
+                t.index = count_vt;
+                if(c == true){
+                    tmp.vt.push(t);
+                }
+                tmp_vt_all.push(t);
+            }
+            count_vt ++;
+        }
+        if(FACE_RE.test(line)){
+            for(let j = 0; j < elements.length; j++){
+                let t = elements[j].split('/');
+                for(let k = 0; k < tmp_vt_all.length; k++){
+                    if(tmp_vt_all[k].index == t[2]){
+                        let q = tmp_vt_all[k].elm;
+                        for(let l = 0; l < q.length; q++){
+                            tmp.texture_buff.push(q[l]);
+                        }
+                    }
+                }
+            }
+        }
+
+        if(!line){
+            console.log(111);
+            c = false;
+            textures.push(tmp);
+            tmp = {};
+        }
+    }
+
+    return textures;
+
 }
 
