@@ -735,6 +735,7 @@ var openFile = function(event) {
                     mtl : text_mtl,
                 }
             ]);
+            console.log(textures);
             let p = loadModels([
                 {
                     name : 'die',
@@ -792,6 +793,14 @@ function loadModels(model){
   });
 }
 
+function setuptextureArray(tmp){
+    tmp.name = "";
+    tmp.src = [];
+    tmp.vt = [];
+    tmp.isText = false;
+    tmp.texture_buff = [];
+}
+
 function getTexturesCoord(model){
     const USE_MATERIAL_RE = /^usemtl/;
     const TEXTURE_RE = /^vt\s/;
@@ -808,21 +817,17 @@ function getTexturesCoord(model){
 
     var textures = [];
     var tmp = {};
-    tmp.name = "";
-    tmp.src = [];
-    tmp.vt = [];
-    tmp.isText = false;
-    tmp.texture_buff = [];
+    setuptextureArray(tmp);
 
     var tmp_vt_all = [];
 
     var count_vt = 1;
+    var c = false;
 
     for (let i = 0; i < lines_obj.length; i++) {
         const line = lines_obj[i].trim();
         const elements = line.split(WHITESPACE_RE);
         elements.shift(); 
-        var c = false;
 
         if(USE_MATERIAL_RE.test(line)){
             c = true;
@@ -881,19 +886,17 @@ function getTexturesCoord(model){
                 for(let k = 0; k < tmp_vt_all.length; k++){
                     if(tmp_vt_all[k].index == t[2]){
                         let q = tmp_vt_all[k].elm;
-                        for(let l = 0; l < q.length; q++){
-                            tmp.texture_buff.push(q[l]);
-                        }
+                        tmp.texture_buff.push(q);
                     }
                 }
             }
         }
 
         if(!line){
-            console.log(111);
-            c = false;
+            console.log(tmp);
             textures.push(tmp);
-            tmp = {};
+            c = false;
+            setuptextureArray(tmp);
         }
     }
 
