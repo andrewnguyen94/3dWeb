@@ -14,7 +14,7 @@ app.mvMatrix = mat4.create();
 app.mvMatrixStack = [];
 app.pMatrix = mat4.create();
 app.camera = mat4.create();
-var texCoordBuffer = null;
+var texCoordBuffer = [];
 
 var reader = new FileReader();
 var objString = "";
@@ -34,6 +34,19 @@ var widthView = null;
 var heightView = null;
 
 var count = 0;
+var nobt = 0;
+
+var url_images = [];
+
+var images = [];
+
+const USE_MATERIAL_RE = /^usemtl/;
+const TEXTURE_RE = /^vt\s/;
+const FACE_RE = /^f\s/;
+const WHITESPACE_RE = /\s+/;
+const NEW_MTL = /^newmtl/;
+const MAP_KD = /^map_Kd/;
+const MAP_BUMP = /^map_bump/;
 
 window.requestAnimFrame = (function (){
     return window.requestAnimationFrame ||
@@ -230,6 +243,29 @@ function setTextCoord(gl, textures){
         gl.STATIC_DRAW);
 }
 
+function loadImages(urls){
+    for(let i = 0; i < urls.length; i++){
+        var image = new Image();
+        image.src = urls[i];
+        images.push(image);
+    }
+}
+
+function getUrls(textures){
+    var urls = [];
+    for(let i = 0; i < textures.length; i++){
+        let url_tmp = textures[i].src;
+        for(let ii = 0; ii < url_tmp.length; ii++){
+            let s = "http://123.cnviet.net/wp-content/uploads/2018/01/" + url_tmp[ii];
+            urls.push(s);
+        }
+
+    }
+    return urls;
+}
+
+function setupTextures(){}
+
 function initBuffers(){
     var layout = new OBJ.Layout(
         OBJ.Layout.POSITION,
@@ -241,7 +277,6 @@ function initBuffers(){
 
     // initialize the mesh's buffers
     for (var mesh in app.meshes){
-        var test = new Float32Array(app.meshes[mesh].textures);
         // console.log(app.meshes[mesh].textures);
         // Create the vertex buffer for this mesh
         var vertexBuffer = gl.createBuffer();
@@ -261,36 +296,61 @@ function initBuffers(){
         app.meshes[mesh].indexBuffer = indexBuffer;
 
         // provide texture coordinates for the rectangle.
-        texCoordBuffer = gl.createBuffer();
-        gl.bindBuffer(gl.ARRAY_BUFFER, texCoordBuffer);
+        // texCoordBuffer = gl.createBuffer();
+        // gl.bindBuffer(gl.ARRAY_BUFFER, texCoordBuffer);
         // set text coords
-        setTextCoord(gl, app.meshes[mesh].textures);
+        // setTextCoord(gl, app.meshes[mesh].textures);
 
-        var texture = gl.createTexture();
-        gl.bindTexture(gl.TEXTURE_2D, texture);
+        // var texture = gl.createTexture();
+        // gl.bindTexture(gl.TEXTURE_2D, texture);
         // Fill the texture with a 1x1 blue pixel.
-        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 1, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE,
-                new Uint8Array([0, 0, 255, 255]));
-        var image = new Image();
-        image.addEventListener('load', function(){
+        // gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 1, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE,
+        //         new Uint8Array([0, 0, 255, 255]));
+
+        loadImages(url_images);
+        for(let i = 0; i < images.length; i++){
+            let textBuff = gl.createBuffer();
+            texCoordBuffer.push(textBuff);
+            gl.bindBuffer(gl.ARRAY_BUFFER, textBuff);
+            gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(app.textures[i].texture_buff), gl.STATIC_DRAW);
+
+            var texture = gl.createTexture();
             gl.bindTexture(gl.TEXTURE_2D, texture);
-            gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA,gl.UNSIGNED_BYTE, image);
-            if(isPowerOf2(image.width) && isPowerOf2(image.height)){
+
+            gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 1, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE,
+                new Uint8Array([0, 0, 255, 255]));
+            images[i].addEventListener('load', function(){
+                gl.bindTexture(gl.TEXTURE_2D, texture);
+                gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA,gl.UNSIGNED_BYTE, images[i]);
+                if(isPowerOf2(image.width) && isPowerOf2(image.height)){
                 gl.generateMipmap(gl.TEXTURE_2D);
-            }else{
-                gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-                gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-                gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-            }
-        });
-        image.src = "http://123.cnviet.net/wp-content/uploads/2018/01/" + app.meshes[mesh].materialsByIndex[0].mapDiffuse.filename;
+                }else{
+                    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+                    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+                    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+                }
+            });
+        }
+        // var image = new Image();
+        // image.addEventListener('load', function(){
+        //     gl.bindTexture(gl.TEXTURE_2D, texture);
+        //     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA,gl.UNSIGNED_BYTE, image);
+        //     if(isPowerOf2(images[i].width) && isPowerOf2(images[i].height)){
+        //         gl.generateMipmap(gl.TEXTURE_2D);
+        //     }else{
+        //         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+        //         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+        //         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+        //     }
+        // });
+        // image.src = "http://123.cnviet.net/wp-content/uploads/2018/01/" + app.meshes[mesh].materialsByIndex[0].mapDiffuse.filename;
 
         // var materialsindex = gl.createBuffer();
 
         // this loops through the mesh names and creates new
         // model objects and setting their mesh to the current mesh
-        app.models[mesh] = {};
-        app.models[mesh].mesh = app.meshes[mesh];
+        // app.models[mesh] = {};
+        // app.models[mesh].mesh = app.meshes[mesh];
     }
 }
 
@@ -661,8 +721,9 @@ function handleMouseMoveDocument(event){
 
 }
 
-function webGLStart(meshes){
+function webGLStart(meshes, textures){
     app.meshes = meshes;
+    app.textures = textures;
     canvas = document.getElementById('mycanvas');
     widthView = canvas.width;
     heightView = canvas.height;
@@ -735,7 +796,8 @@ var openFile = function(event) {
                     mtl : text_mtl,
                 }
             ]);
-            console.log(textures);
+            nobt = getNumberOfTextures(text_obj);
+            url_images = getUrls(textures);
             let p = loadModels([
                 {
                     name : 'die',
@@ -748,7 +810,7 @@ var openFile = function(event) {
                 for([name, mesh] of Object.entries(models)){
                     // console.log("111");
                 }
-                webGLStart(models);
+                webGLStart(models, textures);
             })
         }
         count ++;
@@ -801,14 +863,22 @@ function setuptextureArray(tmp){
     tmp.texture_buff = [];
 }
 
+function getNumberOfTextures(obj){
+    const lines = obj.split('\n');
+    var count = 0;
+
+    for(let i = 0; i < lines.length; i++){
+        const line = lines[i].trim();
+        const elements = line.split(WHITESPACE_RE);
+        elements.shift();
+        if(USE_MATERIAL_RE.test(line)){
+            count++;
+        }
+    }
+    return count;
+}
+
 function getTexturesCoord(model){
-    const USE_MATERIAL_RE = /^usemtl/;
-    const TEXTURE_RE = /^vt\s/;
-    const FACE_RE = /^f\s/;
-    const WHITESPACE_RE = /\s+/;
-    const NEW_MTL = /^newmtl/;
-    const MAP_KD = /^map_Kd/;
-    const MAP_BUMP = /^map_bump/;
     let name = model[0].name;
     let obj = model[0].obj;
     let mtl = model[0].mtl;
@@ -838,11 +908,12 @@ function getTexturesCoord(model){
                     tmp.name += elements[j];
                 }
             }
+            var count = 0;
+            var check_mtl_name = false;
             for(let k = 0; k < lines_mtl.length; k++){
                 const line_mtl = lines_mtl[k].trim();
                 const elements_mtl = line_mtl.split(WHITESPACE_RE);
                 elements_mtl.shift();
-                var count = 0;
                 if(NEW_MTL.test(line_mtl)){
                     count = k;
                     let tmp1 = "";
@@ -854,16 +925,22 @@ function getTexturesCoord(model){
                         }
                     }
                     if(tmp1 === tmp.name){
+                        check_mtl_name = true;
                         continue;
                     } 
                 }
                 if(count != 0 && k == (count + 5)){
-                    if(MAP_BUMP.test(line_mtl) || MAP_KD.test(line_mtl)){
+                    if(check_mtl_name == true){
+                        if(MAP_BUMP.test(line_mtl) || MAP_KD.test(line_mtl)){
                         tmp.isText = true;
                         for(let n = 0; n < elements_mtl.length ; n++){
                             tmp.src.push(elements_mtl[n]);
                         }
                     }
+                    }
+                }
+                if(!line_mtl){
+                    check_mtl_name = false;
                 }
 
             }
@@ -893,13 +970,14 @@ function getTexturesCoord(model){
         }
 
         if(!line){
-            console.log(tmp);
-            textures.push(tmp);
+            if(tmp.isText == true){
+                let tmp1 = {...tmp};
+                textures.push(tmp1);
+            }
             c = false;
             setuptextureArray(tmp);
         }
     }
-
     return textures;
 
 }
