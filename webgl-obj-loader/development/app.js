@@ -47,6 +47,8 @@ const WHITESPACE_RE = /\s+/;
 const NEW_MTL = /^newmtl/;
 const MAP_KD = /^map_Kd/;
 const MAP_BUMP = /^map_bump/;
+const UNIFORM = /^uniform\s/;
+const SAMP = /^sampler2D\s/;
 
 window.requestAnimFrame = (function (){
     return window.requestAnimationFrame ||
@@ -157,7 +159,7 @@ function initShaders(){
     shaderProgram.mvMatrixUniform = gl.getUniformLocation(shaderProgram, "uMVMatrix");
     shaderProgram.nMatrixUniform = gl.getUniformLocation(shaderProgram, "uNMatrix");
     shaderProgram.reverseLightDirectionLocation = gl.getUniformLocation(shaderProgram, "u_reverseLightDirection");
-    shaderProgram.textureLocation = gl.getUniformLocation(shaderProgram, "u_texture");
+    shaderProgram.textureLocation = gl.getUniformLocation(shaderProgram, "u_texture0");
 
     shaderProgram.applyAttributePointers = function(model) {
         const layout = model.mesh.vertexBuffer.layout;
@@ -308,7 +310,7 @@ function initBuffers(){
         //         new Uint8Array([0, 0, 255, 255]));
 
         loadImages(url_images);
-        for(let i = 0; i < images.length; i++){
+        for(let i = 0; i < nobt.length; i++){
             let textBuff = gl.createBuffer();
             texCoordBuffer.push(textBuff);
             gl.bindBuffer(gl.ARRAY_BUFFER, textBuff);
@@ -772,6 +774,23 @@ function webGLStart(meshes, textures){
 //         webGLStart(models);
 //     });
 // };
+
+function setShader(gl, id){
+    var shader = document.getElementById(id);
+    var text = shader.text;
+    var textArray = text.split("\n");
+    for(let i = 0; i < textArray.length; i++){
+        var t = textArray[i].trim();
+        if(UNIFORM.test(t)){
+            let u = textArray[i].search(/\S/);
+            const elements = t.split(WHITESPACE_RE);
+            if(elements[0] == "sampler2D"){
+                
+            }
+        }
+    }
+}
+
 var openFile = function(event) {
     var input = event.target;
 
@@ -784,10 +803,6 @@ var openFile = function(event) {
             text_mtl = reader.result;
 
         }
-        // obj.innerText = text;
-        // console.log(text);
-        // objString = obj.innerHTML;
-        // console.log(objString);
         if(count == 1){
             let textures = getTexturesCoord([
                 {
@@ -796,7 +811,7 @@ var openFile = function(event) {
                     mtl : text_mtl,
                 }
             ]);
-            nobt = getNumberOfTextures(text_obj);
+            nobt = textures.length;
             url_images = getUrls(textures);
             let p = loadModels([
                 {
@@ -861,21 +876,6 @@ function setuptextureArray(tmp){
     tmp.vt = [];
     tmp.isText = false;
     tmp.texture_buff = [];
-}
-
-function getNumberOfTextures(obj){
-    const lines = obj.split('\n');
-    var count = 0;
-
-    for(let i = 0; i < lines.length; i++){
-        const line = lines[i].trim();
-        const elements = line.split(WHITESPACE_RE);
-        elements.shift();
-        if(USE_MATERIAL_RE.test(line)){
-            count++;
-        }
-    }
-    return count;
 }
 
 function getTexturesCoord(model){

@@ -16,7 +16,23 @@
         varying vec3 vSpecular;
         varying float vSpecularExponent;
         uniform vec3 u_reverseLightDirection;
-        uniform sampler2D u_texture;
+        uniform sampler2D u_texture0;
+        uniform sampler2D u_texture1;
+        uniform sampler2D u_texture2;
+        uniform sampler2D u_texture3;
+        uniform sampler2D u_texture4;
+        uniform sampler2D u_texture5;
+        uniform sampler2D u_texture6;
+        uniform sampler2D u_texture7;
+        uniform sampler2D u_texture8;
+        uniform sampler2D u_texture9;
+        uniform sampler2D u_texture10;
+        uniform sampler2D u_texture11;
+        uniform sampler2D u_texture12;
+        uniform sampler2D u_texture13;
+        uniform sampler2D u_texture14;
+        uniform sampler2D u_texture15;
+
 
 
         void main(void) {
@@ -29,7 +45,7 @@
             vec3 color = vDiffuse * dot(N, L) + vSpecular * pow(dot(H, N), vSpecularExponent);
             vec4 tmpcolor = vec4(color, 1.0);
             // gl_FragColor = vec4(1,0,0,1);
-            vec4 tmpcolorone = texture2D(u_texture, vTextureCoord);
+            vec4 tmpcolorone = texture2D(u_texture0, vTextureCoord);
             gl_FragColor = tmpcolorone;
             // float light = dot(N, U);
             // gl_FragColor.rgb *= light;
