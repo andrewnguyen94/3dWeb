@@ -52,6 +52,8 @@ const SAMP = /^sampler2D\s/;
 const VARYING = /^varying\s/;
 const VEC4 = /^vec4\s/;
 const GLFRAG = /^gl_FragColor\s/;
+const ATTR = /^attribute\s/;
+const VTEX0 = /^vTextureCoord0\s/;
 
 window.requestAnimFrame = (function (){
     return window.requestAnimationFrame ||
@@ -117,6 +119,8 @@ function getShader(gl, id){
 }
 
 function initShaders(){
+    setFragmentShader(gl, "shader-fs");
+    setVertexShader(gl, "shader-vs");
     var fragmentShader = getShader(gl, "shader-fs");
     var vertexShader = getShader(gl, "shader-vs");
 
@@ -151,18 +155,36 @@ function initShaders(){
             console.warn('Shader attribute "' + attrName + '" not found in shader. Is it undeclared or unused in the shader code?');
         }
     }
-
-    shaderProgram.texcoordLocation = gl.getAttribLocation(shaderProgram, "a_texcoord");
-    if(shaderProgram.texcoordLocation != -1){
-        gl.enableVertexAttribArray(shaderProgram.texcoordLocation);
-    }else{
-        console.warn('Shader attribute atexcoord not found in shader. Is it undeclared or unused in the shader code?');
+    shaderProgram.texcoordLocation = [];
+    shaderProgram.textureLocation = [];
+    for(let i = 0; i < nobt; i++){
+        let r = "a_texcoord" + i;
+        let t = gl.getAttribLocation(shaderProgram, r);
+        shaderProgram.texcoordLocation.push(t);                                                              
     }
+    // shaderProgram.texcoordLocation = gl.getAttribLocation(shaderProgram, "a_texcoord");
+    for(let i = 0; i < nobt; i++){
+        if(shaderProgram.texcoordLocation[i] != -1){
+            gl.enableVertexAttribArray(shaderProgram.texcoordLocation[i]);
+        }else{
+            console.warn('Shader attribute atexcoord not found in shader. Is it undeclared or unused in the shader code?');
+        }
+    }
+    // if(shaderProgram.texcoordLocation != -1){
+    //     gl.enableVertexAttribArray(shaderProgram.texcoordLocation);
+    // }else{
+    //     console.warn('Shader attribute atexcoord not found in shader. Is it undeclared or unused in the shader code?');
+    // }
     shaderProgram.pMatrixUniform = gl.getUniformLocation(shaderProgram, "uPMatrix");
     shaderProgram.mvMatrixUniform = gl.getUniformLocation(shaderProgram, "uMVMatrix");
     shaderProgram.nMatrixUniform = gl.getUniformLocation(shaderProgram, "uNMatrix");
     shaderProgram.reverseLightDirectionLocation = gl.getUniformLocation(shaderProgram, "u_reverseLightDirection");
-    shaderProgram.textureLocation = gl.getUniformLocation(shaderProgram, "u_texture0");
+    for(let i = 0; i < nobt; i++){
+        let r = "u_texture" + i;
+        let t = gl.getUniformLocation(shaderProgram, r);
+        shaderProgram.textureLocation.push(t);
+    }
+    // shaderProgram.textureLocation = gl.getUniformLocation(shaderProgram, "u_texture0");
 
     shaderProgram.applyAttributePointers = function(model) {
         const layout = model.mesh.vertexBuffer.layout;
@@ -193,19 +215,20 @@ function drawObject(model){
      as well as the shaderProgram has a uniform attribute called "samplerUniform"
      */
 //    gl.useProgram(shaderProgram);
-
     gl.bindBuffer(gl.ARRAY_BUFFER, model.mesh.vertexBuffer);
     shaderProgram.applyAttributePointers(model);
 
 //  texture
     // gl.enableVertexAttribArray(shaderProgram.texcoordLocation);
-    gl.bindBuffer(gl.ARRAY_BUFFER, texCoordBuffer);
-    var size = 2;
-    var type = gl.FLOAT;
-    var normalize = false;
-    var stride = 0;
-    var offset = 0;
-    gl.vertexAttribPointer(shaderProgram.texcoordLocation, size, type, normalize, stride, offset);
+    for(let i = 0; i < texCoordBuffer.length; i++){
+        gl.bindBuffer(gl.ARRAY_BUFFER, texCoordBuffer[i]);
+        var size = 2;
+        var type = gl.FLOAT;
+        var normalize = false;
+        var stride = 0;
+        var offset = 0;
+        gl.vertexAttribPointer(shaderProgram.texcoordLocation[i], size, type, normalize, stride, offset);
+    }
 //end texture
 
     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, model.mesh.indexBuffer);
@@ -230,7 +253,10 @@ function setMatrixUniforms(){
     gl.uniformMatrix4fv(shaderProgram.pMatrixUniform, false, app.pMatrix);
     gl.uniformMatrix4fv(shaderProgram.mvMatrixUniform, false, app.mvMatrix);
     gl.uniform3fv(shaderProgram.reverseLightDirectionLocation, normalize([0,0,-5]));
-    gl.uniform1i(shaderProgram.textureLocation, 0);
+    for(let i = 0; i < nobt; i++){
+        gl.uniform1i(shaderProgram.textureLocation[i], i);
+    }
+    // gl.uniform1i(shaderProgram.textureLocation, 0);
 
     var normalMatrix = mat3.create();
     mat3.normalFromMat4(normalMatrix, app.mvMatrix);
@@ -313,7 +339,7 @@ function initBuffers(){
         //         new Uint8Array([0, 0, 255, 255]));
 
         loadImages(url_images);
-        for(let i = 0; i < nobt.length; i++){
+        for(let i = 0; i < nobt; i++){
             let textBuff = gl.createBuffer();
             texCoordBuffer.push(textBuff);
             gl.bindBuffer(gl.ARRAY_BUFFER, textBuff);
@@ -354,8 +380,8 @@ function initBuffers(){
 
         // this loops through the mesh names and creates new
         // model objects and setting their mesh to the current mesh
-        // app.models[mesh] = {};
-        // app.models[mesh].mesh = app.meshes[mesh];
+        app.models[mesh] = {};
+        app.models[mesh].mesh = app.meshes[mesh];
     }
 }
 
@@ -796,7 +822,7 @@ function setFragmentShader(gl, id){
         const elements = t.split(WHITESPACE_RE);
         elements.shift();
         if(VARYING.test(t)){
-            if(elements[0] == "vec2" && elements[1] = "vTextureCoord0"){
+            if(elements[0] == "vec2" && elements[1] == "vTextureCoord0;"){
                 for(let iii = 0; iii < nobt; iii++){
                     if(nobt == 1){
                         break;
@@ -880,12 +906,78 @@ function setVertexShader(gl, id){
     var shader = document.getElementById(id);
     var text = shader.text;
     var textArray = text.split("\n");
+    var count = 0;
+    var count1 = 0;
     var p = [];
     for(let i = 0; i < textArray.length; i++){
         p.push(textArray[i]);
     }
-
-
+    for(let i = 0; i < textArray.length; i++){
+        var t = textArray[i].trim();
+        var u = textArray[i].search(/\S/);
+        const elements = t.split(WHITESPACE_RE);
+        elements.shift();
+        if(ATTR.test(t)){
+            if(elements[0] == "vec2" && elements[1] == "a_texcoord0;"){
+                for(let iii = 0; iii < nobt; iii++){
+                    if(nobt ==1 ) break;
+                    else{
+                        count++;
+                        let apps = "";
+                        for(let ii = 0; ii < u; ii++){
+                            apps += " ";
+                        }
+                        if(iii == 0) continue;
+                        let c = "attribute vec2 a_texcoord" + iii + ";";
+                        apps += c;
+                        p.splice(i + iii, 0, apps);
+                    }
+                }
+            }
+        }
+        if(VARYING.test(t)){
+            if(elements[0] == "vec2" && elements[1] == "vTextureCoord0;"){
+                for(let iii = 0; iii < nobt; iii++){
+                    if(nobt == 1) break;
+                    else{
+                        count1++;
+                        let apps = "";
+                        for(let ii = 0; ii < u; ii++){
+                            apps += " ";
+                        }
+                        if(iii == 0) continue;
+                        let c = "varying vec2 vTextureCoord" + iii + ";";
+                        apps += c;
+                        p.splice(i + iii + count - 1, 0, apps);
+                    }
+                }
+            }
+        }
+        if(VTEX0.test(t)){
+            for(let iii = 0; iii < nobt; iii++){
+                if(nobt == 1) break;
+                else{
+                    let apps = "";
+                    for(let ii = 0; ii < u; ii++){
+                        apps += " ";
+                    }
+                    if(iii == 0) continue;
+                    let c = "vTextureCoord" + iii + " = " + "a_texcoord" + iii + ";";
+                    apps += c;
+                    p.splice(i + iii + count + count1 -2, 0, apps);
+                }
+            }
+        }
+    }
+    var q = "";
+    for(let i = 0; i < p.length; i++){
+        if(i < p.length -1 ){
+            q += p[i] + '\n';
+        }else{
+            q += p[i];
+        }
+    }
+    shader.text = q;
 }
 
 var openFile = function(event) {
