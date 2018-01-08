@@ -49,6 +49,9 @@ const MAP_KD = /^map_Kd/;
 const MAP_BUMP = /^map_bump/;
 const UNIFORM = /^uniform\s/;
 const SAMP = /^sampler2D\s/;
+const VARYING = /^varying\s/;
+const VEC4 = /^vec4\s/;
+const GLFRAG = /^gl_FragColor\s/;
 
 window.requestAnimFrame = (function (){
     return window.requestAnimationFrame ||
@@ -775,20 +778,114 @@ function webGLStart(meshes, textures){
 //     });
 // };
 
-function setShader(gl, id){
+function setFragmentShader(gl, id){
     var shader = document.getElementById(id);
     var text = shader.text;
     var textArray = text.split("\n");
+    var count = 0;
+    var count1 = 0; 
+    var count2 = 0;
+    var p = [];
+    for(let i = 0; i < textArray.length; i++){
+        p.push(textArray[i]);
+    }
+
     for(let i = 0; i < textArray.length; i++){
         var t = textArray[i].trim();
-        if(UNIFORM.test(t)){
-            let u = textArray[i].search(/\S/);
-            const elements = t.split(WHITESPACE_RE);
-            if(elements[0] == "sampler2D"){
-                
+        let u = textArray[i].search(/\S/);
+        const elements = t.split(WHITESPACE_RE);
+        elements.shift();
+        if(VARYING.test(t)){
+            if(elements[0] == "vec2" && elements[1] = "vTextureCoord0"){
+                for(let iii = 0; iii < nobt; iii++){
+                    if(nobt == 1){
+                        break;
+                    }else{
+                        let apps = "";
+                        for(let ii = 0; ii < u; ii++){
+                            apps += " ";
+                        }
+                        count++;
+                        if(iii == 0) continue;
+                        let c = "varying vec2 vTextureCoord" + iii + ";";
+                        apps += c;
+                        p.splice(i + iii, 0, apps);
+                    }
+                }
             }
         }
+        if(UNIFORM.test(t)){
+            if(elements[0] == "sampler2D"){
+                for(let iii = 0; iii < nobt; iii++){
+                    if(nobt == 1){
+                        break;
+                    }else{
+                        count1++;
+                        let apps = "";
+                        for(let ii = 0; ii < u; ii++){
+                            apps += " ";
+                        }
+                        if(iii == 0) continue;
+                        let c = "uniform sampler2D u_texture" + iii + ";";
+                        apps += c;
+                        p.splice(i+iii+count-1, 0 ,apps);
+                    }
+                }
+            }
+        }
+        if(VEC4.test(t)){
+            if(elements[0] == "color0"){
+                for(let iii = 0; iii < nobt; iii++){
+                    if(nobt == 1) break;
+                    else{
+                        count2++;
+                        let apps = "";
+                        for(let ii = 0; ii < u; ii++){
+                            apps += " ";
+                        }
+                        if(iii == 0) continue;
+                        let c = "vec4 color" + iii + " = texture2D(u_texture" + iii + ", vTextureCoord" + iii + ");"
+                        apps += c;
+                        p.splice(i + iii + count + count1 -2, 0, apps); 
+                    }
+                }
+            }
+        }
+        if(t[0] == "}"){
+            let t1 = textArray[i - 1].search(/\S/);
+            let apps = "";
+            for(let ii = 0; ii < t1; ii++){
+              apps += " ";
+            }
+            apps += "gl_FragColor = ";
+            for(let iii = 0; iii < nobt; iii++){
+              if(iii < nobt - 1) apps += "color" + iii + "*";
+              else apps += "color" + iii + ";";
+            }
+            p.splice(i + count + count1 + count2 - 3, 0, apps);
+        }
     }
+    var q = "";
+    for(let i = 0; i < p.length; i++){
+        if(i < p.length -1 ){
+            q += p[i] + '\n';
+        }else{
+            q += p[i];
+        }
+    }
+    shader.text = q;
+}
+
+function setVertexShader(gl, id){
+    var shader = document.getElementById(id);
+    var text = shader.text;
+    var textArray = text.split("\n");
+    var p = [];
+    for(let i = 0; i < textArray.length; i++){
+        p.push(textArray[i]);
+    }
+
+
 }
 
 var openFile = function(event) {
