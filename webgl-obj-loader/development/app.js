@@ -137,7 +137,7 @@ function initShaders(){
     const attrs = {
         'aVertexPosition': OBJ.Layout.POSITION.key,
         'aVertexNormal': OBJ.Layout.NORMAL.key,
-        'aTextureCoord': OBJ.Layout.UV.key,
+        // 'aTextureCoord': OBJ.Layout.UV.key,
         'aDiffuse': OBJ.Layout.DIFFUSE.key,
         'aSpecular': OBJ.Layout.SPECULAR.key,
         'aSpecularExponent': OBJ.Layout.SPECULAR_EXPONENT.key,
@@ -149,6 +149,7 @@ function initShaders(){
             continue;
         }
         shaderProgram.attrIndices[attrName] = gl.getAttribLocation(shaderProgram, attrName);
+        // console.log(shaderProgram.attrIndices[attrName]);
         if (shaderProgram.attrIndices[attrName] != -1) {
             gl.enableVertexAttribArray(shaderProgram.attrIndices[attrName]);
         } else {
@@ -220,7 +221,8 @@ function drawObject(model){
 
 //  texture
     // gl.enableVertexAttribArray(shaderProgram.texcoordLocation);
-    for(let i = 0; i < texCoordBuffer.length; i++){
+    for(let i = 0; i < nobt; i++){
+        // console.log(shaderProgram.texcoordLocation[i], texCoordBuffer[i]);
         gl.bindBuffer(gl.ARRAY_BUFFER, texCoordBuffer[i]);
         var size = 2;
         var type = gl.FLOAT;
@@ -255,6 +257,7 @@ function setMatrixUniforms(){
     gl.uniform3fv(shaderProgram.reverseLightDirectionLocation, normalize([0,0,-5]));
     for(let i = 0; i < nobt; i++){
         gl.uniform1i(shaderProgram.textureLocation[i], i);
+
     }
     // gl.uniform1i(shaderProgram.textureLocation, 0);
 
@@ -341,9 +344,9 @@ function initBuffers(){
         loadImages(url_images);
         for(let i = 0; i < nobt; i++){
             let textBuff = gl.createBuffer();
-            texCoordBuffer.push(textBuff);
             gl.bindBuffer(gl.ARRAY_BUFFER, textBuff);
             gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(app.textures[i].texture_buff), gl.STATIC_DRAW);
+            texCoordBuffer.push(textBuff);
 
             var texture = gl.createTexture();
             gl.bindTexture(gl.TEXTURE_2D, texture);
