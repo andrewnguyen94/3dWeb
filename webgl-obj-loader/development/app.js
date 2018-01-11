@@ -85,6 +85,7 @@ function initWebGL(canvas){
 
 function getShader(gl, id){
     var shaderScript = document.getElementById(id);
+    console.log(shaderScript);
     if (!shaderScript){
         return null;
     }
@@ -891,7 +892,12 @@ function setFragmentShader(gl, id){
               if(iii < nobt - 1) apps += "color" + iii + "*";
               else apps += "color" + iii + ";";
             }
-            p.splice(i + count + count1 + count2 - 3, 0, apps);
+            if(count + count1 + count2 > 0){
+                p.splice(i + count + count1 + count2 - 3, 0, apps);
+            }else{
+                p.splice(i + count + count1 + count2, 0, apps);
+            } 
+            
         }
     }
     var q = "";
@@ -983,6 +989,37 @@ function setVertexShader(gl, id){
     shader.text = q;
 }
 
+function groupTextures(textures){
+    let q = [];
+    for(let i = 0; i < textures.length; i++){
+        q.push(textures[i]);
+    }
+    let m = [];
+    let count = 0;
+    for(let i = 0; i < textures.length; i++){
+        let n = {};
+        if(q[i]){
+            n.texture_buff = q[i].texture_buff;
+        }else break;
+        for(let j = i + 1; j < textures.length; j++){
+            if(q[i]){
+                if((j - count) >= 0){
+                    if(q[j - count].name == q[i].name){
+                        n.name = q[i].name;
+                        n.isText = q[i].isText;
+                        n.src = q[i].src;
+                        n.texture_buff = n.texture_buff.concat(q[j - count].texture_buff);
+                        q.splice(j - count,1);
+                        count++;
+                    }
+                }
+            }
+        }
+        m.push(n);
+    }
+    return m;
+}
+
 var openFile = function(event) {
     var input = event.target;
 
@@ -1003,7 +1040,8 @@ var openFile = function(event) {
                     mtl : text_mtl,
                 }
             ]);
-            nobt = textures.length;
+            let t = groupTextures(textures);
+            nobt = t.length;
             url_images = getUrls(textures);
             let p = loadModels([
                 {
@@ -1017,7 +1055,7 @@ var openFile = function(event) {
                 for([name, mesh] of Object.entries(models)){
                     // console.log("111");
                 }
-                webGLStart(models, textures);
+                webGLStart(models, t);
             })
         }
         count ++;
@@ -1085,7 +1123,6 @@ function getTexturesCoord(model){
 
     var count_vt = 1;
     var c = false;
-
     for (let i = 0; i < lines_obj.length; i++) {
         const line = lines_obj[i].trim();
         const elements = line.split(WHITESPACE_RE);
