@@ -1,6 +1,7 @@
 import os
 import sys
-
+import json
+import ast
 
 class Textures(object):
 	def __init__(self, text_type, text_src):
@@ -8,13 +9,13 @@ class Textures(object):
 		self.text_src = text_src
 		self.text_buff = []
 
-	def setTextType(text_type):
+	def setTextType(self, text_type):
 		self.text_type = text_type
 
-	def  setTextSrc(text_src):
+	def  setTextSrc(self, text_src):
 		self.text_src = text_src
 
-	def setTextBuff(text_buff):
+	def setTextBuff(self, text_buff):
 		self.text_buff = text_buff
 
 	def getTextType(self):
@@ -52,7 +53,6 @@ def getName(t):
 
 def getTextureFromName(name, text_classes):
 	for i in range(len(text_classes)):
-		print text_classes[i].getTextType(), name
 		if text_classes[i].getTextType()[0] == name:
 			return text_classes[i]
 
@@ -86,7 +86,6 @@ def main():
 	if fp != None:
 		f = open(fp, 'r')
 		lines = f.readlines();
-		e = None
 		mtl = ""
 		face_text = []
 		for ii in range(len(lines)):
@@ -119,18 +118,49 @@ def main():
 						if e.getTextBuff():
 							u = e.getTextBuff()
 						for j in range(len(face_text)):
-							u.append(face_text[j])
-						print u
+							m = int(face_text[j])
+							u.append(textures[2 * m - 2])
+							u.append(textures[2 * m - 1])
 						e.setTextBuff(u)
 						mtl = ""
 						face_text = []
-
-	print text_classes
 	for f in face_t:
 		f1 = int(f)
 		text_buff.append(textures[2 * f1 - 2])
 		text_buff.append(textures[2 * f1 - 1])
-
+	datas = []
+	if text_classes:
+		for i in range(len(text_classes)):
+			data = {
+				'type' : text_classes[i].getTextType(),
+				'src' : text_classes[i].getTextSrc(),
+				'buff' : text_classes[i].getTextBuff(),
+			}
+			datas.append(data)
+	with open('C:\\Users\\andrew_nguyen\\Downloads\\aaa\\data.json', 'w') as outfile:
+		try:
+			if datas:
+				data = "data = ["
+				for i in range(len(datas)):
+					if i < len(datas) - 1:
+						data += str(datas[i]) + ","
+					else:
+						data += str(datas[i])
+					data += "];"
+				jsons = json.dump(data, outfile)
+		finally:
+			outfile.close()
+			# print jsons
+	with open('C:\\Users\\andrew_nguyen\\Downloads\\aaa\\data.json', 'r+') as outfile:
+		try:
+			outfile.seek(0)
+			lines = outfile.readlines()
+			for line in lines:
+				l = line[1:]
+				print l
+				outfile.write(l)
+		finally:
+			outfile.close()
 
 if __name__ == '__main__':
 	main()

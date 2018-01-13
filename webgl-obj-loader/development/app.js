@@ -19,7 +19,7 @@ var texCoordBuffer = [];
 var reader = new FileReader();
 var objString = "";
 var obj = document.getElementById('my_cube.obj');
-var text_obj, text_mtl;
+var text_obj, text_mtl, data_json;
 var options = {};
 var isUp = true;
 var isDown = false;
@@ -346,7 +346,8 @@ function initBuffers(){
         for(let i = 0; i < nobt; i++){
             let textBuff = gl.createBuffer();
             gl.bindBuffer(gl.ARRAY_BUFFER, textBuff);
-            gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(app.textures[i].texture_buff), gl.STATIC_DRAW);
+            console.log(app.textures[i]);
+            gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(app.textures[i]), gl.STATIC_DRAW);
             texCoordBuffer.push(textBuff);
 
             var texture = gl.createTexture();
@@ -1033,16 +1034,20 @@ var openFile = function(event) {
 
         }
         if(count == 1){
-            let textures = getTexturesCoord([
-                {
-                    name : 'die',
-                    obj : text_obj,
-                    mtl : text_mtl,
-                }
-            ]);
-            let t = groupTextures(textures);
+            // let textures = getTexturesCoord([
+            //     {
+            //         name : 'die',
+            //         obj : text_obj,
+            //         mtl : text_mtl,
+            //     }
+            // ]);
+            // let t = groupTextures(textures);
+            let t = [];
+            for (let i = 0; i < data.length; i++){
+                t.push(data[i].buff); 
+            }
             nobt = t.length;
-            url_images = getUrls(textures);
+            url_images = getUrls(data);
             let p = loadModels([
                 {
                     name : 'die',
