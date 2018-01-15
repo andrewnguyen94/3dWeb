@@ -53,7 +53,7 @@ def getName(t):
 
 def getTextureFromName(name, text_classes):
 	for i in range(len(text_classes)):
-		if text_classes[i].getTextType()[0] == name:
+		if text_classes[i].getTextType() == name:
 			return text_classes[i]
 
 def main():
@@ -81,7 +81,7 @@ def main():
 					t_b = lines[ii - 5].split()
 					tmp = getName(t_b)
 					text_type.append(tmp)
-					texture = Textures(text_type, text_src)
+					texture = Textures(tmp, t[1])
 					text_classes.append(texture)
 	if fp != None:
 		f = open(fp, 'r')
@@ -115,15 +115,16 @@ def main():
 					if t1[0] == 'f':
 						e = getTextureFromName(mtl, text_classes)
 						u = []
-						if e.getTextBuff():
-							u = e.getTextBuff()
-						for j in range(len(face_text)):
-							m = int(face_text[j])
-							u.append(textures[2 * m - 2])
-							u.append(textures[2 * m - 1])
-						e.setTextBuff(u)
-						mtl = ""
-						face_text = []
+						if e:
+							if e.getTextBuff():
+								u = e.getTextBuff()
+							for j in range(len(face_text)):
+								m = int(face_text[j])
+								u.append(textures[2 * m - 2])
+								u.append(textures[2 * m - 1])
+							e.setTextBuff(u)
+							mtl = ""
+							face_text = []
 	for f in face_t:
 		f1 = int(f)
 		text_buff.append(textures[2 * f1 - 2])
@@ -137,7 +138,7 @@ def main():
 				'buff' : text_classes[i].getTextBuff(),
 			}
 			datas.append(data)
-	with open('C:\\Users\\andrew_nguyen\\Downloads\\aaa\\data.json', 'w') as outfile:
+	with open('C:\\Users\\andrew_nguyen\\Downloads\\hihi\\data.json', 'w') as outfile:
 		try:
 			if datas:
 				data = "data = ["
@@ -145,20 +146,8 @@ def main():
 					if i < len(datas) - 1:
 						data += str(datas[i]) + ","
 					else:
-						data += str(datas[i])
-					data += "];"
+						data += str(datas[i]) + "];"
 				jsons = json.dump(data, outfile)
-		finally:
-			outfile.close()
-			# print jsons
-	with open('C:\\Users\\andrew_nguyen\\Downloads\\aaa\\data.json', 'r+') as outfile:
-		try:
-			outfile.seek(0)
-			lines = outfile.readlines()
-			for line in lines:
-				l = line[1:]
-				print l
-				outfile.write(l)
 		finally:
 			outfile.close()
 

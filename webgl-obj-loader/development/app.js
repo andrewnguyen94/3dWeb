@@ -26,6 +26,7 @@ var isDown = false;
 var isRight = false;
 var isLeft = false;
 var isMiddle = false;
+var allTexttures = [];
 
 var lastMouseX = null;
 var lastMouseY = null;
@@ -35,6 +36,7 @@ var heightView = null;
 
 var count = 0;
 var nobt = 0;
+var offsetArray = []; 
 
 var url_images = [];
 
@@ -85,7 +87,6 @@ function initWebGL(canvas){
 
 function getShader(gl, id){
     var shaderScript = document.getElementById(id);
-    console.log(shaderScript);
     if (!shaderScript){
         return null;
     }
@@ -220,20 +221,19 @@ function drawObject(model){
     gl.bindBuffer(gl.ARRAY_BUFFER, model.mesh.vertexBuffer);
     shaderProgram.applyAttributePointers(model);
 
-//  texture
-    // gl.enableVertexAttribArray(shaderProgram.texcoordLocation);
     for(let i = 0; i < nobt; i++){
         // console.log(shaderProgram.texcoordLocation[i], texCoordBuffer[i]);
-        gl.bindBuffer(gl.ARRAY_BUFFER, texCoordBuffer[i]);
+        gl.bindBuffer(gl.ARRAY_BUFFER, texCoordBuffer[0]);
         var size = 2;
         var type = gl.FLOAT;
         var normalize = false;
         var stride = 0;
-        var offset = 0;
+        var offset = offsetArray[0];
         gl.vertexAttribPointer(shaderProgram.texcoordLocation[i], size, type, normalize, stride, offset);
+        gl.uniform1i(shaderProgram.textureLocation[i], i);
+        gl.activeTexture(gl.TEXTURE0 + i);
+        gl.bindTexture(gl.TEXTURE_2D, allTexttures[i]);
     }
-//end texture
-
     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, model.mesh.indexBuffer);
     setMatrixUniforms();
     gl.drawElements(gl.TRIANGLES, model.mesh.indexBuffer.numItems, gl.UNSIGNED_SHORT, 0);
@@ -256,10 +256,6 @@ function setMatrixUniforms(){
     gl.uniformMatrix4fv(shaderProgram.pMatrixUniform, false, app.pMatrix);
     gl.uniformMatrix4fv(shaderProgram.mvMatrixUniform, false, app.mvMatrix);
     gl.uniform3fv(shaderProgram.reverseLightDirectionLocation, normalize([0,0,-5]));
-    for(let i = 0; i < nobt; i++){
-        gl.uniform1i(shaderProgram.textureLocation[i], i);
-
-    }
     // gl.uniform1i(shaderProgram.textureLocation, 0);
 
     var normalMatrix = mat3.create();
@@ -343,12 +339,29 @@ function initBuffers(){
         //         new Uint8Array([0, 0, 255, 255]));
 
         loadImages(url_images);
+        let textBuff = gl.createBuffer();
+        var temp = nobt ? app.textures[0] : null;
+        console.log(temp);
         for(let i = 0; i < nobt; i++){
-            let textBuff = gl.createBuffer();
-            gl.bindBuffer(gl.ARRAY_BUFFER, textBuff);
-            console.log(app.textures[i]);
-            gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(app.textures[i]), gl.STATIC_DRAW);
-            texCoordBuffer.push(textBuff);
+            // let textBuff = gl.createBuffer();
+            if(nobt == 1){
+
+            }
+            if(i != 0){
+                let offtmp = temp.length;
+                offsetArray.push(offtmp);
+                temp = temp.concat(app.textures[i]);
+            }else{
+                let firstOff = 0;
+                offsetArray.push[firstOff];
+            }
+            if(i == nobt - 1){
+                console.log(temp);
+                gl.bindBuffer(gl.ARRAY_BUFFER, textBuff);
+                gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(temp), gl.STATIC_DRAW);
+
+                texCoordBuffer.push(textBuff);
+            }
 
             var texture = gl.createTexture();
             gl.bindTexture(gl.TEXTURE_2D, texture);
@@ -358,7 +371,7 @@ function initBuffers(){
             images[i].addEventListener('load', function(){
                 gl.bindTexture(gl.TEXTURE_2D, texture);
                 gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA,gl.UNSIGNED_BYTE, images[i]);
-                if(isPowerOf2(image.width) && isPowerOf2(image.height)){
+                if(isPowerOf2(images[i].width) && isPowerOf2(images[i].height)){
                 gl.generateMipmap(gl.TEXTURE_2D);
                 }else{
                     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
@@ -366,6 +379,7 @@ function initBuffers(){
                     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
                 }
             });
+            allTexttures.push(texture);
         }
         // var image = new Image();
         // image.addEventListener('load', function(){
