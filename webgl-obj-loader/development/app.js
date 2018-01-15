@@ -286,10 +286,12 @@ function getUrls(textures){
     var urls = [];
     for(let i = 0; i < textures.length; i++){
         let url_tmp = textures[i].src;
-        for(let ii = 0; ii < url_tmp.length; ii++){
-            let s = "http://123.cnviet.net/wp-content/uploads/2018/01/" + url_tmp[ii];
-            urls.push(s);
-        }
+        let s = "http://123.cnviet.net/wp-content/uploads/2018/01/" + url_tmp;
+        urls.push(s);
+        // for(let ii = 0; ii < url_tmp.length; ii++){
+        //     let s = "http://123.cnviet.net/wp-content/uploads/2018/01/" + url_tmp[ii];
+        //     urls.push(s);
+        // }
 
     }
     return urls;
@@ -796,32 +798,38 @@ function webGLStart(meshes, textures){
 //    drawScene();
 }
 
-// window.onload = function (){
-//     // OBJ.downloadMeshes({
-//     //     'suzanne': '/development/models/suzanne.obj'
-//     // }, webGLStart);
-//     var models = {};
-    
-//     let p = OBJ.downloadModels([
-//         {
-//             name: 'die',
-//             obj: 'http://123.cnviet.net/wp-content/uploads/2018/01/zimCreateArchive_aaa.obj',
-//             mtl: 'http://123.cnviet.net/wp-content/uploads/2018/01/zimCreateArchive_aaa.mtl',
-//         }// ,
-//         // {
-//             // obj: '/development/models/suzanne.obj'
-//         // }
-//     ]);
+window.onload = function (){
+    // OBJ.downloadMeshes({
+    //     'suzanne': '/development/models/suzanne.obj'
+    // }, webGLStart);
+    var models = {};
+
+    let t = [];
+    for (let i = 0; i < data.length; i++){
+        t.push(data[i].buff); 
+    }
+    nobt = t.length;
+    url_images = getUrls(data);
+    let p = OBJ.downloadModels([
+        {
+            name: 'die',
+            obj: 'http://123.cnviet.net/wp-content/uploads/2018/01/zimCreateArchive_hihi.obj',
+            mtl: 'http://123.cnviet.net/wp-content/uploads/2018/01/zimCreateArchive_hihi.mtl',
+        }// ,
+        // {
+            // obj: '/development/models/suzanne.obj'
+        // }
+    ]);
     
 
-//     p.then((models) => {
-//         for ([name, mesh] of Object.entries(models)) {
-//             console.log('Name:', name);
-//             console.log('Mesh:', mesh);
-//         }
-//         webGLStart(models);
-//     });
-// };
+    p.then((models) => {
+        for ([name, mesh] of Object.entries(models)) {
+            console.log('Name:', name);
+            console.log('Mesh:', mesh);
+        }
+        webGLStart(models,t);
+    });
+};
 
 function setFragmentShader(gl, id){
     var shader = document.getElementById(id);
@@ -905,8 +913,9 @@ function setFragmentShader(gl, id){
             apps += "gl_FragColor = ";
             for(let iii = 0; iii < nobt; iii++){
               if(iii < nobt - 1) apps += "color" + iii + "*";
-              else apps += "color" + iii + ";";
+              else apps += "color" + iii;
             }
+            apps += "* color_0;"
             if(count + count1 + count2 > 0){
                 p.splice(i + count + count1 + count2 - 3, 0, apps);
             }else{
@@ -924,6 +933,7 @@ function setFragmentShader(gl, id){
         }
     }
     shader.text = q;
+    console.log(shader);
 }
 
 function setVertexShader(gl, id){
