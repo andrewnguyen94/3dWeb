@@ -798,38 +798,38 @@ function webGLStart(meshes, textures){
 //    drawScene();
 }
 
-window.onload = function (){
-    // OBJ.downloadMeshes({
-    //     'suzanne': '/development/models/suzanne.obj'
-    // }, webGLStart);
-    var models = {};
+// window.onload = function (){
+//     // OBJ.downloadMeshes({
+//     //     'suzanne': '/development/models/suzanne.obj'
+//     // }, webGLStart);
+//     var models = {};
 
-    let t = [];
-    for (let i = 0; i < data.length; i++){
-        t.push(data[i].buff); 
-    }
-    nobt = t.length;
-    url_images = getUrls(data);
-    let p = OBJ.downloadModels([
-        {
-            name: 'die',
-            obj: 'http://123.cnviet.net/wp-content/uploads/2018/01/zimCreateArchive_hihi.obj',
-            mtl: 'http://123.cnviet.net/wp-content/uploads/2018/01/zimCreateArchive_hihi.mtl',
-        }// ,
-        // {
-            // obj: '/development/models/suzanne.obj'
-        // }
-    ]);
+//     let t = [];
+//     for (let i = 0; i < data.length; i++){
+//         t.push(data[i].buff); 
+//     }
+//     nobt = t.length;
+//     url_images = getUrls(data);
+//     let p = OBJ.downloadModels([
+//         {
+//             name: 'die',
+//             obj: 'http://123.cnviet.net/wp-content/uploads/2018/01/zimCreateArchive_hihi.obj',
+//             mtl: 'http://123.cnviet.net/wp-content/uploads/2018/01/zimCreateArchive_hihi.mtl',
+//         }// ,
+//         // {
+//             // obj: '/development/models/suzanne.obj'
+//         // }
+//     ]);
     
 
-    p.then((models) => {
-        for ([name, mesh] of Object.entries(models)) {
-            console.log('Name:', name);
-            console.log('Mesh:', mesh);
-        }
-        webGLStart(models,t);
-    });
-};
+//     p.then((models) => {
+//         for ([name, mesh] of Object.entries(models)) {
+//             console.log('Name:', name);
+//             console.log('Mesh:', mesh);
+//         }
+//         webGLStart(models,t);
+//     });
+// };
 
 function setFragmentShader(gl, id){
     var shader = document.getElementById(id);

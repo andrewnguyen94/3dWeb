@@ -76,7 +76,7 @@ def main():
 		for ii in range(len(lines)):
 			t = lines[ii].split()
 			if t:
-				if t[0] == 'map_Kd' or t[0] == 'map_bump':
+				if t[0] == 'map_Kd':
 					text_src.append(t[1])
 					t_b = lines[ii - 5].split()
 					tmp = getName(t_b)
