@@ -15,6 +15,9 @@ class Mesh(object):
 		self.ambient = []
 		self.specular = []
 		self.alpha = 1
+		self.verts_buff = []
+		self.norms_buff = []
+		self.uvs_buff = []
 
 	def get_name(self):
 		return self.name
@@ -63,6 +66,21 @@ class Mesh(object):
 		return self.alpha
 	def set_alpha(self, alpha):
 		self.alpha = alpha
+
+	def get_verts_buff(self):
+		return self.verts_buff
+	def set_verts_buff(self, verts_buff):
+		self.verts_buff = verts_buff
+
+	def get_norms_buff(self):
+		return self.norms_buff
+	def set_norms_buff(self, norms_buff):
+		self.norms_buff = norms_buff
+
+	def get_uvs_buff(self):
+		return self.uvs_buff
+	def set_uvs_buff(self, uvs_buff):
+		self.uvs_buff = uvs_buff
 
 
 def getName(t):
@@ -143,8 +161,14 @@ def getUVs(t):
 			tmp.append(t[i])
 	return tmp
 
+def get_pos_arr(faces_pos):
+	
+
 def main():
 	MeshArray = []
+	pos_arr = []
+	nor_arr = []
+	uv_arr = []
 	fp = ""
 	fp1 = ""
 	if sys.argv[1] != None:
@@ -188,6 +212,9 @@ def main():
 		lines = f.readlines()
 		mesh = None
 		vertices = []
+		faces_pos = []
+		faces_nors = []
+		faces_uvs = []
 		for i in range(len(lines)):
 			l = lines[i].split()
 			if l:
@@ -198,24 +225,43 @@ def main():
 					vs = getVertices(l)
 					for i in range(len(vs)):
 						vertices.append(vs[i])
+						pos_arr.append(vs[i])
 				if l[0] == 'vn':
 					vns = getNormals(l)
 					for i in range(len(vns)):
 						normals.append(vns[i])
+						nor_arr.append(vns[i])
 					l1 = lines[i-1].split()
 					if l1[0] == 'v':
 						mesh.set_vertices(vertices)
+						vertices = []
 				if l[0] == 'vt':
 					vts = getUVs(l)
 					for i in range(len(vts)):
 						uvs.append(vts[i])
+						uv_arr.append(vts[i])
 					l1 = lines[i - 1].split()
 					if l1[0] == 'vn':
 						mesh.set_normals(normals)
+						normals = []
 				if l[0] == 'f':
-					
-
+					for i in range(len(l)):
+						if i == 0:
+							continue
+						else:
+							m = l[i].split()
+							faces_pos.append(m[0])
+							faces_nors.append(m[2])
+							faces_uvs.append(m[1])
+					l1 = lines[i - 1].split()
+					if l1[0] == 'vt':
+						mesh.set_uvs(uvs)
+						uvs = []
 			else:
+				l1 = l[i - 1].split()
+				if l1 and l1[0] == 'f':
+
+
 
 
 if __name__ == '__main__':
