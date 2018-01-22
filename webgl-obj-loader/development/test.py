@@ -169,16 +169,16 @@ def main():
 							e.setTextBuff(u)
 							face_text = []
 						if f:
-							if f.getTextBuff():
-								u = f.getTextBuff()
+							if f.getBumpBuff():
+								u = f.getBumpBuff()
 							for j in range(len(face_bump)):
 								m = int(face_bump[j])
 								u.append(normals[3*m - 3])
 								u.append(normals[3*m - 2])
 								u.append(normals[3*m - 1])
-								f.setBumpBuff(u)
-								face_bump = []
-						 mtl = ""
+							f.setBumpBuff(u)
+							face_bump = []
+						mtl = ""
 	for f in face_t:
 		f1 = int(f)
 		text_buff.append(textures[2 * f1 - 2])
@@ -204,14 +204,22 @@ def main():
 
 	with open('C:\\Users\\andrew_nguyen\\Downloads\\hihi\\data.json', 'w') as outfile:
 		try:
+			data = ""
 			if datas_text:
-				data = "data = ["
-				for i in range(len(datas)):
-					if i < len(datas) - 1:
-						data += str(datas[i]) + ","
+				data += "data_texture = ["
+				for i in range(len(datas_text)):
+					if i < len(datas_text) - 1:
+						data += str(datas_text[i]) + ","
 					else:
-						data += str(datas[i]) + "];"
-				jsons = json.dump(data, outfile)
+						data += str(datas_text[i]) + "];"
+			if datas_bump:
+				data += "data_bump = ["
+				for i in range(len(datas_bump)):
+					if i < len(datas_bump) - 1:
+						data += str(datas_bump[i]) + ","
+					else:
+						data += str(datas_bump[i]) + "];"
+			jsons = json.dump(data, outfile)
 		finally:
 			outfile.close()
 
