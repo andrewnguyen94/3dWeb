@@ -18,6 +18,7 @@ class Mesh(object):
 		self.verts_buff = []
 		self.norms_buff = []
 		self.uvs_buff = []
+		self.isBump = 0
 
 	def get_name(self):
 		return self.name
@@ -81,6 +82,11 @@ class Mesh(object):
 		return self.uvs_buff
 	def set_uvs_buff(self, uvs_buff):
 		self.uvs_buff = uvs_buff
+
+	def get_is_bump(self):
+		return self.isBump
+	def set_is_bump(self, isBump):
+		self.isBump = isBump
 
 
 def getName(t):
@@ -161,9 +167,6 @@ def getUVs(t):
 			tmp.append(t[i])
 	return tmp
 
-def get_pos_arr(faces_pos):
-	
-
 def main():
 	MeshArray = []
 	pos_arr = []
@@ -205,6 +208,7 @@ def main():
 				if l[0] == 'map_bump':
 					text_norm = getTextNorm(l)
 					mesh.set_text_norm(text_norm)
+					mesh.set_is_bump(1)
 			else:
 				mesh = None
 	if fp != None:
@@ -212,6 +216,8 @@ def main():
 		lines = f.readlines()
 		mesh = None
 		vertices = []
+		normals = []
+		uvs = []
 		faces_pos = []
 		faces_nors = []
 		faces_uvs = []
@@ -249,20 +255,79 @@ def main():
 						if i == 0:
 							continue
 						else:
-							m = l[i].split()
+							m = l[i].split('/')
 							faces_pos.append(m[0])
 							faces_nors.append(m[2])
 							faces_uvs.append(m[1])
 					l1 = lines[i - 1].split()
-					if l1[0] == 'vt':
-						mesh.set_uvs(uvs)
-						uvs = []
+					if l1:
+						if l1[0] == 'vt':
+							mesh.set_uvs(uvs)
+							uvs = []
 			else:
-				l1 = l[i - 1].split()
+				l1 = lines[i - 1].split()
 				if l1 and l1[0] == 'f':
+					if mesh.get_verts_buff():
+						tmp_verts = mesh.get_verts_buff()
+					else: 
+						tmp_verts = []
+					if mesh.get_norms_buff():
+						tmp_norms = mesh.get_norms_buff()
+					else:
+						tmp_norms = []
+					if mesh.get_uvs_buff():
+						tmp_uvs = mesh.get_uvs_buff()
+					else:
+						tmp_uvs = []
 
+					for i in range(len(faces_pos)):
+						tmp_verts.append(pos_arr[int(faces_pos[i]) * 3 - 3])
+						tmp_verts.append(pos_arr[int(faces_pos[i]) * 3 - 2])
+						tmp_verts.append(pos_arr[int(faces_pos[i]) * 3 - 1])
+					mesh.set_verts_buff(tmp_verts)
+					for i in range(len(faces_nors)):
+						tmp_norms.append(nor_arr[int(faces_nors[i]) * 3 - 3])
+						tmp_norms.append(nor_arr[int(faces_nors[i]) * 3 - 2])
+						tmp_norms.append(nor_arr[int(faces_nors[i]) * 3 - 1])
+					mesh.set_norms_buff(tmp_norms)
+					for i in range(len(faces_uvs)):
+						tmp_uvs.append(uv_arr[int(faces_uvs[i]) * 2 - 2])
+						tmp_uvs.append(uv_arr[int(faces_uvs[i]) * 2 - 1])
+					mesh.set_uvs_buff(tmp_uvs)
+					faces_pos = []
+					faces_nors = []
+					faces_uvs = []
 
+	datas = []
+	for i in range(len(MeshArray)):
+		data = {
+			'name' : MeshArray[i].get_name(),
+			'verts' : MeshArray[i].get_verts_buff(),
+			'normals' : MeshArray[i].get_norms_buff(),
+			'uvs' : MeshArray[i].get_uvs_buff(),
+			'diffuse' : MeshArray[i].get_diffuse(),
+			'ambient' : MeshArray[i].get_ambient(),
+			'specular' : MeshArray[i].get_specular(),
+			'alpha' : MeshArray[i].get_alpha(),
+			'isBump' : MeshArray[i].get_is_bump(),
+			'textures' : MeshArray[i].get_text_diff(),
+			'bumpMap' : MeshArray[i].get_text_norm(),
+		}
+		datas.append(data)
 
+	with open('C:\\Users\\andrew_nguyen\\Downloads\\hihi\\data.json', 'w') as outfile:
+		try :
+			data = ""
+			if MeshArray:
+				data += "data = ["
+				for i in range(len(datas)):
+					if i < len(datas) - 1:
+						data += str(datas[i]) + ","
+					else:
+						data += str(datas[i]) + "];"
+				jsons = json.dump(data, outfile)
+		finally:
+			outfile.close()
 
 if __name__ == '__main__':
 	main()

@@ -120,97 +120,6 @@ function getShader(gl, id){
     return shader;
 }
 
-function initShaders(){
-    setFragmentShader(gl, "shader-fs");
-    setVertexShader(gl, "shader-vs");
-    var fragmentShader = getShader(gl, "shader-fs");
-    var vertexShader = getShader(gl, "shader-vs");
-
-    shaderProgram = gl.createProgram();
-    gl.attachShader(shaderProgram, vertexShader);
-    gl.attachShader(shaderProgram, fragmentShader);
-    gl.linkProgram(shaderProgram);
-
-    if (!gl.getProgramParameter(shaderProgram, gl.LINK_STATUS)){
-        alert("Could not initialise shaders");
-    }
-    gl.useProgram(shaderProgram);
-
-    const attrs = {
-        'aVertexPosition': OBJ.Layout.POSITION.key,
-        'aVertexNormal': OBJ.Layout.NORMAL.key,
-        // 'aTextureCoord': OBJ.Layout.UV.key,
-        'aDiffuse': OBJ.Layout.DIFFUSE.key,
-        'aSpecular': OBJ.Layout.SPECULAR.key,
-        'aSpecularExponent': OBJ.Layout.SPECULAR_EXPONENT.key,
-    };
-
-    shaderProgram.attrIndices = {};
-    for (const attrName in attrs) {
-        if (!attrs.hasOwnProperty(attrName)) {
-            continue;
-        }
-        shaderProgram.attrIndices[attrName] = gl.getAttribLocation(shaderProgram, attrName);
-        // console.log(shaderProgram.attrIndices[attrName]);
-        if (shaderProgram.attrIndices[attrName] != -1) {
-            gl.enableVertexAttribArray(shaderProgram.attrIndices[attrName]);
-        } else {
-            console.warn('Shader attribute "' + attrName + '" not found in shader. Is it undeclared or unused in the shader code?');
-        }
-    }
-    shaderProgram.texcoordLocation = [];
-    shaderProgram.textureLocation = [];
-    for(let i = 0; i < nobt; i++){
-        let r = "a_texcoord" + i;
-        let t = gl.getAttribLocation(shaderProgram, r);
-        shaderProgram.texcoordLocation.push(t);                                                              
-    }
-    // shaderProgram.texcoordLocation = gl.getAttribLocation(shaderProgram, "a_texcoord");
-    for(let i = 0; i < nobt; i++){
-        if(shaderProgram.texcoordLocation[i] != -1){
-            gl.enableVertexAttribArray(shaderProgram.texcoordLocation[i]);
-        }else{
-            console.warn('Shader attribute atexcoord not found in shader. Is it undeclared or unused in the shader code?');
-        }
-    }
-    // if(shaderProgram.texcoordLocation != -1){
-    //     gl.enableVertexAttribArray(shaderProgram.texcoordLocation);
-    // }else{
-    //     console.warn('Shader attribute atexcoord not found in shader. Is it undeclared or unused in the shader code?');
-    // }
-    shaderProgram.pMatrixUniform = gl.getUniformLocation(shaderProgram, "uPMatrix");
-    shaderProgram.mvMatrixUniform = gl.getUniformLocation(shaderProgram, "uMVMatrix");
-    shaderProgram.nMatrixUniform = gl.getUniformLocation(shaderProgram, "uNMatrix");
-    shaderProgram.reverseLightDirectionLocation = gl.getUniformLocation(shaderProgram, "u_reverseLightDirection");
-    for(let i = 0; i < nobt; i++){
-        let r = "u_texture" + i;
-        let t = gl.getUniformLocation(shaderProgram, r);
-        shaderProgram.textureLocation.push(t);
-    }
-    // shaderProgram.textureLocation = gl.getUniformLocation(shaderProgram, "u_texture0");
-
-    shaderProgram.applyAttributePointers = function(model) {
-        const layout = model.mesh.vertexBuffer.layout;
-        for (const attrName in attrs) {
-            if (!attrs.hasOwnProperty(attrName) || shaderProgram.attrIndices[attrName] == -1) {
-                continue;
-            }
-            const layoutKey = attrs[attrName];
-            if (shaderProgram.attrIndices[attrName] != -1) {
-                const attr = layout[layoutKey];
-                gl.vertexAttribPointer(
-                    shaderProgram.attrIndices[attrName],
-                    attr.size,
-                    gl[attr.type],
-                    attr.normalized,
-                    attr.stride,
-                    attr.offset);
-            }
-        }
-
-    };
-}
-
 function drawObject(model){
     /*
      Takes in a model that points to a mesh and draws the object on the scene.
@@ -297,112 +206,66 @@ function getUrls(textures){
     return urls;
 }
 
-function setupTextures(){}
+function initShaders(){
+    var fragmentShader = getShader(gl, "shader-fs");
+    var vertexShader = getShader(gl, "shader-vs");
+
+    shaderProgram = gl.createProgram();
+    gl.attachShader(shaderProgram, vertexShader);
+    gl.attachShader(shaderProgram, fragmentShader);
+    gl.linkProgram(shaderProgram);
+
+    if (!gl.getProgramParameter(shaderProgram, gl.LINK_STATUS)){
+        alert("Could not initialise shaders");
+    }
+    gl.useProgram(shaderProgram);
+
+    attr_pos = gl.getAttribLocation(shaderProgram, "vert_pos");
+    gl.enableVertexAttribArray(attr_pos);
+    attr_tang = gl.getAttribLocation(shaderProgram, "vert_tang");
+    gl.enableVertexAttribArray(attr_tang);
+    attr_bitang = gl.getAttribLocation(shaderProgram, "vert_bitang");
+    gl.enableVertexAttribArray(attr_bitang);
+    attr_uv = gl.getAttribLocation(shaderProgram, "vert_uv");
+    gl.enableVertexAttribArray(attr_uv);
+}
 
 function initBuffers(){
-    var layout = new OBJ.Layout(
-        OBJ.Layout.POSITION,
-        OBJ.Layout.NORMAL,
-        OBJ.Layout.DIFFUSE,
-        OBJ.Layout.UV,
-        OBJ.Layout.SPECULAR,
-        OBJ.Layout.SPECULAR_EXPONENT);
+    for(var mesh in app.meshes){
+        //position
+        var posBuffer = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, posBuffer);
+        var posData = mesh.verts;
+        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(posData), gl.STATIC_DRAW);
+        //end position
 
-    // initialize the mesh's buffers
-    for (var mesh in app.meshes){
-        // console.log(app.meshes[mesh].textures);
-        // Create the vertex buffer for this mesh
-        var vertexBuffer = gl.createBuffer();
-        gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer);
-        var vertexData = app.meshes[mesh].makeBufferData(layout);
-        gl.bufferData(gl.ARRAY_BUFFER, vertexData, gl.STATIC_DRAW);
-        vertexBuffer.numItems = vertexData.numItems;
-        vertexBuffer.layout = layout;
-        app.meshes[mesh].vertexBuffer = vertexBuffer;
+        //tangents
+        var tangBuffer = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, tangBuffer);
+        var tangData = mesh.tangents;
+        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(tangData), gl.STATIC_DRAW);
+        //end tangent
 
-        // Create the index buffer for this mesh
-        var indexBuffer = gl.createBuffer();
-        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer);
-        var indexData = app.meshes[mesh].makeIndexBufferData();
-        gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, indexData, gl.STATIC_DRAW);
-        indexBuffer.numItems = indexData.numItems;
-        app.meshes[mesh].indexBuffer = indexBuffer;
+        //Bitangents
+        var bitTangBuffer = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, bitTangBuffer);
+        var bitTangData = mesh.bitTangents;
+        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(bitTangData), gl.STATIC_DRAW);
+        //end bit
 
-        // provide texture coordinates for the rectangle.
-        // texCoordBuffer = gl.createBuffer();
-        // gl.bindBuffer(gl.ARRAY_BUFFER, texCoordBuffer);
-        // set text coords
-        // setTextCoord(gl, app.meshes[mesh].textures);
+        //uvs
+        var uvs = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, uv);
+        var uv_data = mesh.uvs;
+        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(uv_data), gl.STATIC_DRAW);
+        //end uvs
 
-        // var texture = gl.createTexture();
-        // gl.bindTexture(gl.TEXTURE_2D, texture);
-        // Fill the texture with a 1x1 blue pixel.
-        // gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 1, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE,
-        //         new Uint8Array([0, 0, 255, 255]));
-
-        loadImages(url_images);
-        let textBuff = gl.createBuffer();
-        var temp = nobt ? app.textures[0] : null;
-        console.log(temp);
-        for(let i = 0; i < nobt; i++){
-            // let textBuff = gl.createBuffer();
-            if(nobt == 1){
-
-            }
-            if(i != 0){
-                let offtmp = temp.length;
-                offsetArray.push(offtmp);
-                temp = temp.concat(app.textures[i]);
-            }else{
-                let firstOff = 0;
-                offsetArray.push[firstOff];
-            }
-            if(i == nobt - 1){
-                console.log(temp);
-                gl.bindBuffer(gl.ARRAY_BUFFER, textBuff);
-                gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(temp), gl.STATIC_DRAW);
-
-                texCoordBuffer.push(textBuff);
-            }
-
-            var texture = gl.createTexture();
-            gl.bindTexture(gl.TEXTURE_2D, texture);
-
-            gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 1, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE,
-                new Uint8Array([0, 0, 255, 255]));
-            images[i].addEventListener('load', function(){
-                gl.bindTexture(gl.TEXTURE_2D, texture);
-                gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA,gl.UNSIGNED_BYTE, images[i]);
-                if(isPowerOf2(images[i].width) && isPowerOf2(images[i].height)){
-                gl.generateMipmap(gl.TEXTURE_2D);
-                }else{
-                    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-                    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-                    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-                }
-            });
-            allTexttures.push(texture);
-        }
-        // var image = new Image();
-        // image.addEventListener('load', function(){
-        //     gl.bindTexture(gl.TEXTURE_2D, texture);
-        //     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA,gl.UNSIGNED_BYTE, image);
-        //     if(isPowerOf2(images[i].width) && isPowerOf2(images[i].height)){
-        //         gl.generateMipmap(gl.TEXTURE_2D);
-        //     }else{
-        //         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-        //         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-        //         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-        //     }
-        // });
-        // image.src = "http://123.cnviet.net/wp-content/uploads/2018/01/" + app.meshes[mesh].materialsByIndex[0].mapDiffuse.filename;
-
-        // var materialsindex = gl.createBuffer();
-
-        // this loops through the mesh names and creates new
-        // model objects and setting their mesh to the current mesh
-        app.models[mesh] = {};
-        app.models[mesh].mesh = app.meshes[mesh];
+        //index buffer
+        var index_buffer = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, index_buffer);
+        var indices = mesh.indices;
+        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(indices), gl.STATIC_DRAW);
+        //end 
     }
 }
 
@@ -773,9 +636,8 @@ function handleMouseMoveDocument(event){
 
 }
 
-function webGLStart(meshes, textures){
+function webGLStart(meshes){
     app.meshes = meshes;
-    app.textures = textures;
     canvas = document.getElementById('mycanvas');
     widthView = canvas.width;
     heightView = canvas.height;
@@ -1035,26 +897,12 @@ var openFile = function(event) {
             //     }
             // ]);
             // let t = groupTextures(textures);
-            let t = [];
-            for (let i = 0; i < data.length; i++){
-                t.push(data[i].buff); 
+            let models = [];
+            for(let i = 0; i < data.length; i++){
+                let model = {...data[i]};
+                models.push(model);
             }
-            nobt = t.length;
-            url_images = getUrls(data);
-            let p = loadModels([
-                {
-                    name : 'die',
-                    obj : text_obj,
-                    mtl : text_mtl,
-                }
-            ]);
-
-            p.then((models) => {
-                for([name, mesh] of Object.entries(models)){
-                    // console.log("111");
-                }
-                webGLStart(models, t);
-            })
+            webGLStart(models);
         }
         count ++;
         
