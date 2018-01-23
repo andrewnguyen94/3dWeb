@@ -2,6 +2,86 @@ import os
 import sys
 import json
 
+class  Vectors3D(object):
+	"""docstring for  Vectors"""
+	def __init__(self, x,y,z):
+		self.x = x
+		self.y = y
+		self.z = z
+
+	def get_x(self):
+		return self.x
+
+	def get_y(self):
+		return self.y
+
+	def get_z(self):
+		return self.z
+
+class Vectors2D(object):
+	"""docstring for Vectors2D"""
+	def __init__(self, x,y):
+		self.x = x
+		self.y = y
+
+	def get_x(self):
+		return self.x
+
+	def get_y(self):
+		return self.y
+
+	def get_z(self):
+		return self.z
+		
+
+def subVector3D(a, b):
+	a_x = a.get_x()
+	a_y = a.get_y()
+	a_z = a.get_z()
+
+	b_x = b.get_x()
+	b_y = b.get_y()
+	b_z = b.get_z()
+
+	c_x = b_x - a_x
+	c_y = b_y - a_y
+	c_z = b_z - a_z
+
+	return Vectors3D(c_x, c_y, c_z)
+
+def sub2Vector3D(a, b):
+	return Vectors3D(a.get_x() - b.get_x(), a.get_y() - b.get_y(), a.get_z() - b.get_z())
+
+def subVector2D(a,b):
+	a_x = a.get_x()
+	a_y = a.get_y()
+
+	b_x = b.get_x()
+	b_y = b.get_y()
+
+	c_x = b_x - a_x
+	c_y = b_y - a_y
+
+	return Vectors2D(c_x, c_y)
+
+def mulVector3DWithConst(a, b):
+	b_x = b.get_x()
+	b_y = b.get_y()
+	b_z = b.get_z()
+
+	return Vectors3D(a * b_x, a * b_y, a * b_z)
+
+def mulVector2DWithConst(a, b):
+	b_x = b.get_x()
+	b_y = b.get_y()
+
+	return Vectors2D(a * b_x, a * b_y)
+
+def new_range(start, end, step):
+    while start <= end:
+        yield start
+        start += step
+		
 class Mesh(object):
 	"""docstring for ClassName"""
 	def __init__(self, name):
@@ -19,6 +99,24 @@ class Mesh(object):
 		self.norms_buff = []
 		self.uvs_buff = []
 		self.isBump = 0
+		self.tangents = []
+		self.bit_tangents = []
+		self.verts = 0;
+
+	def set_verts(self, verts):
+		self.verts = verts
+	def get_verts(self):
+		return self.verts
+
+	def set_tangents(self, tangents):
+		self.tangents = tangents
+	def get_tangents(self):
+		return self.tangents
+
+	def set_bit_tangents(self, bit_tangents):
+		self.bit_tangents = bit_tangents
+	def get_bit_tangents(self):
+		return self.bit_tangents
 
 	def get_name(self):
 		return self.name
@@ -285,6 +383,7 @@ def main():
 						tmp_verts.append(pos_arr[int(faces_pos[i]) * 3 - 2])
 						tmp_verts.append(pos_arr[int(faces_pos[i]) * 3 - 1])
 					mesh.set_verts_buff(tmp_verts)
+					mesh.set_verts(len(tmp_verts))
 					for i in range(len(faces_nors)):
 						tmp_norms.append(nor_arr[int(faces_nors[i]) * 3 - 3])
 						tmp_norms.append(nor_arr[int(faces_nors[i]) * 3 - 2])
@@ -297,6 +396,31 @@ def main():
 					faces_pos = []
 					faces_nors = []
 					faces_uvs = []
+
+	for i in range(len(MeshArray)):
+		mesh = MeshArray[i]
+		pos_buff = mesh.get_verts_buff()
+		uv_buff = mesh.get_uvs_buff()
+
+		for j in new_range(0, mesh.get_verts(), 3):
+			point_1 = Vectors3D(pos_buff[3 * j], pos_buff[3 * j + 1], pos_buff[3 * j + 2])
+			point_2 = Vectors3D(pos_buff[3 * j + 3], pos_buff[3 * j + 4], pos_buff[3 * j + 5])
+			point_3 = Vectors3D(pos_buff[3 * j + 6], pos_buff[3 * j + 7], pos_buff[3 * j + 8])
+
+			uv_1 = Vectors2D(uv_buff[2 * j], uv_buff[2 * j] + 1)
+			uv_2 = Vectors2D(uv_buff[2 * j + 2], uv_buff[2 * j] + 3)
+			uv_3 = Vectors2D(uv_buff[2 * j] + 4, uv_buff[2 * j] + 5)
+
+			deltaPos1 = subVector3D(point_1, point_2)
+			deltaPos2 = subVector3D(point_1, point_3)
+
+			deltaUv1 = subVector2D(uv_1, uv_2)
+			deltaUv2 = subVector2D(uv_1, uv_3)
+
+			r = 1.0 / (deltaUv1.get_x() * deltaUv2.get_y() - deltaUv1.get_y() * deltaUv2.get_x())
+
+			tangent = mulVector3DWithConst(r, sub2Vector3D(mulVector3DWithConst(deltaUv2.get_y() * deltaPos1), mulVector3DWithConst(deltaUv1.get_y() * deltaPos2)))
+			bit_tangent = mulVector3DWithConst(r, sub2Vector3D(mulVector3DWithConst(deltaUv1.get_x() * deltaPos2), mulVector3DWithConst(deltaUv2.get_x() * deltaPos1)))
 
 	datas = []
 	for i in range(len(MeshArray)):
