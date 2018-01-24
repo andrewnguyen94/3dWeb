@@ -29,9 +29,6 @@ class Vectors2D(object):
 
 	def get_y(self):
 		return self.y
-
-	def get_z(self):
-		return self.z
 		
 
 def subVector3D(a, b):
@@ -43,9 +40,9 @@ def subVector3D(a, b):
 	b_y = b.get_y()
 	b_z = b.get_z()
 
-	c_x = b_x - a_x
-	c_y = b_y - a_y
-	c_z = b_z - a_z
+	c_x = float(b_x) - float(a_x)
+	c_y = float(b_y) - float(a_y)
+	c_z = float(b_z) - float(a_z)
 
 	return Vectors3D(c_x, c_y, c_z)
 
@@ -59,8 +56,8 @@ def subVector2D(a,b):
 	b_x = b.get_x()
 	b_y = b.get_y()
 
-	c_x = b_x - a_x
-	c_y = b_y - a_y
+	c_x = float(b_x) - float(a_x)
+	c_y = float(b_y) - float(a_y)
 
 	return Vectors2D(c_x, c_y)
 
@@ -101,7 +98,19 @@ class Mesh(object):
 		self.isBump = 0
 		self.tangents = []
 		self.bit_tangents = []
-		self.verts = 0;
+		self.verts = 0
+		self.indices = []
+		self.hashobjs = []
+
+	def set_hashobjs(self, hashobjs):
+		self.hashobjs = hashobjs
+	def get_hashobjs(self):
+		return self.hashobjs
+
+	def set_indices(self, indices):
+		self.indices = indices
+	def get_indices(self):
+		return self.indices
 
 	def set_verts(self, verts):
 		self.verts = verts
@@ -186,6 +195,20 @@ class Mesh(object):
 	def set_is_bump(self, isBump):
 		self.isBump = isBump
 
+class Hash(object):
+	"""docstring for Hash"""
+	def __init__(self, name, index):
+		self.name = name
+		self.index = index
+
+	def get_name(self):
+		return self.name
+
+	def get_index(self):
+		return self.index
+		
+		
+
 
 def getName(t):
 	tmp = ""
@@ -265,6 +288,12 @@ def getUVs(t):
 			tmp.append(t[i])
 	return tmp
 
+def get_hash_obj(hashname, hashObjects):
+	if hashObjects:
+		for hashobj in hashObjects:
+			if hashobj.get_name() == hashname:
+				return hashobj
+
 def main():
 	MeshArray = []
 	pos_arr = []
@@ -313,6 +342,7 @@ def main():
 		f = open(fp, 'r')
 		lines = f.readlines()
 		mesh = None
+		index = 0;
 		vertices = []
 		normals = []
 		uvs = []
@@ -357,11 +387,27 @@ def main():
 							faces_pos.append(m[0])
 							faces_nors.append(m[2])
 							faces_uvs.append(m[1])
+							idtmp = mesh.get_indices()
+							hashname = l[i] + "," + mesh.get_name()
+							hashObjects = mesh.get_hashobjs()
+							hashobj = get_hash_obj(hashname, hashObjects)
+							if hashobj:
+								idtmp.append(hashobj.get_index())
+								mesh.set_indices(idtmp)
+							else:
+								hashtmp = Hash(hashname, index)
+								hashObjects.append(hashtmp)
+								mesh.set_hashobjs(hashObjects)
+								idtmp.append(index)
+								mesh.set_indices(idtmp)
+								index = index + 1
+
 					l1 = lines[i - 1].split()
 					if l1:
 						if l1[0] == 'vt':
 							mesh.set_uvs(uvs)
 							uvs = []
+
 			else:
 				l1 = lines[i - 1].split()
 				if l1 and l1[0] == 'f':
@@ -383,7 +429,7 @@ def main():
 						tmp_verts.append(pos_arr[int(faces_pos[i]) * 3 - 2])
 						tmp_verts.append(pos_arr[int(faces_pos[i]) * 3 - 1])
 					mesh.set_verts_buff(tmp_verts)
-					mesh.set_verts(len(tmp_verts))
+					mesh.set_verts(len(tmp_verts) / 3)
 					for i in range(len(faces_nors)):
 						tmp_norms.append(nor_arr[int(faces_nors[i]) * 3 - 3])
 						tmp_norms.append(nor_arr[int(faces_nors[i]) * 3 - 2])
@@ -402,25 +448,54 @@ def main():
 		pos_buff = mesh.get_verts_buff()
 		uv_buff = mesh.get_uvs_buff()
 
-		for j in new_range(0, mesh.get_verts(), 3):
-			point_1 = Vectors3D(pos_buff[3 * j], pos_buff[3 * j + 1], pos_buff[3 * j + 2])
-			point_2 = Vectors3D(pos_buff[3 * j + 3], pos_buff[3 * j + 4], pos_buff[3 * j + 5])
-			point_3 = Vectors3D(pos_buff[3 * j + 6], pos_buff[3 * j + 7], pos_buff[3 * j + 8])
+		if mesh.get_verts():
+			for j in new_range(0, mesh.get_verts() - 1, 3):
+				if mesh.get_tangents():
+					ts = mesh.get_tangents()
+				else:
+					ts = []
 
-			uv_1 = Vectors2D(uv_buff[2 * j], uv_buff[2 * j] + 1)
-			uv_2 = Vectors2D(uv_buff[2 * j + 2], uv_buff[2 * j] + 3)
-			uv_3 = Vectors2D(uv_buff[2 * j] + 4, uv_buff[2 * j] + 5)
+				if mesh.get_bit_tangents():
+					bts = mesh.get_bit_tangents()
+				else:
+					bts = []
 
-			deltaPos1 = subVector3D(point_1, point_2)
-			deltaPos2 = subVector3D(point_1, point_3)
+				point_1 = Vectors3D(pos_buff[3 * j], pos_buff[3 * j + 1], pos_buff[3 * j + 2])
+				point_2 = Vectors3D(pos_buff[3 * j + 3], pos_buff[3 * j + 4], pos_buff[3 * j + 5])
+				point_3 = Vectors3D(pos_buff[3 * j + 6], pos_buff[3 * j + 7], pos_buff[3 * j + 8])
 
-			deltaUv1 = subVector2D(uv_1, uv_2)
-			deltaUv2 = subVector2D(uv_1, uv_3)
+				uv_1 = Vectors2D(uv_buff[2 * j], uv_buff[2 * j + 1])
+				uv_2 = Vectors2D(uv_buff[2 * j + 2], uv_buff[2 * j + 3])
+				uv_3 = Vectors2D(uv_buff[2 * j + 4], uv_buff[2 * j + 5])
 
-			r = 1.0 / (deltaUv1.get_x() * deltaUv2.get_y() - deltaUv1.get_y() * deltaUv2.get_x())
+				deltaPos1 = subVector3D(point_1, point_2)
+				deltaPos2 = subVector3D(point_1, point_3)
 
-			tangent = mulVector3DWithConst(r, sub2Vector3D(mulVector3DWithConst(deltaUv2.get_y() * deltaPos1), mulVector3DWithConst(deltaUv1.get_y() * deltaPos2)))
-			bit_tangent = mulVector3DWithConst(r, sub2Vector3D(mulVector3DWithConst(deltaUv1.get_x() * deltaPos2), mulVector3DWithConst(deltaUv2.get_x() * deltaPos1)))
+				deltaUv1 = subVector2D(uv_1, uv_2)
+				deltaUv2 = subVector2D(uv_1, uv_3)
+
+				if deltaUv1.get_x() * deltaUv2.get_y() - deltaUv1.get_y() * deltaUv2.get_x():
+					r = 1.0 / (deltaUv1.get_x() * deltaUv2.get_y() - deltaUv1.get_y() * deltaUv2.get_x())
+					tangent = mulVector3DWithConst(r, sub2Vector3D(mulVector3DWithConst(deltaUv2.get_y(),deltaPos1), mulVector3DWithConst(deltaUv1.get_y(),deltaPos2)))
+					bit_tangent = mulVector3DWithConst(r, sub2Vector3D(mulVector3DWithConst(deltaUv1.get_x(),deltaPos2), mulVector3DWithConst(deltaUv2.get_x(),deltaPos1)))
+				else:
+					tangent = Vectors3D(1,1,1)
+					bit_tangent = Vectors3D(1,1,1)
+
+				#set tangent
+				for jj in range(3):
+					ts.append(tangent.get_x())
+					ts.append(tangent.get_y())
+					ts.append(tangent.get_z())
+
+				#set bit tangent
+				for jj in range(3):
+					bts.append(bit_tangent.get_x())
+					bts.append(bit_tangent.get_y())
+					bts.append(bit_tangent.get_z())
+
+				mesh.set_tangents(ts)
+				mesh.set_bit_tangents(bts)
 
 	datas = []
 	for i in range(len(MeshArray)):
@@ -436,6 +511,9 @@ def main():
 			'isBump' : MeshArray[i].get_is_bump(),
 			'textures' : MeshArray[i].get_text_diff(),
 			'bumpMap' : MeshArray[i].get_text_norm(),
+			'tangent' : MeshArray[i].get_tangents(),
+			'bitTangent' : MeshArray[i].get_bit_tangents(),
+			'indices' : MeshArray[i].get_indices(),
 		}
 		datas.append(data)
 
