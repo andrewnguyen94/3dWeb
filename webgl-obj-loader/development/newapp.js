@@ -15,18 +15,24 @@ app.mvMatrixStack = [];
 app.pMatrix = mat4.create();
 app.camera = mat4.create();
 var texCoordBuffer = [];
+var posBufferArr = [];
+var tangBufferArr = [];
+var bitTangBufferArr = [];
+var uvsArr = [];
+var indexBufferArr = [];
+
+var textDiffuseArr = [];
+var textNormArr = [];
+
 
 var reader = new FileReader();
-var objString = "";
-var obj = document.getElementById('my_cube.obj');
-var text_obj, text_mtl, data_json;
+var text_obj, text_mtl;
 var options = {};
 var isUp = true;
 var isDown = false;
 var isRight = false;
 var isLeft = false;
 var isMiddle = false;
-var allTexttures = [];
 
 var lastMouseX = null;
 var lastMouseY = null;
@@ -41,6 +47,7 @@ var offsetArray = [];
 var url_images = [];
 
 var images = [];
+var type = 0;
 
 const USE_MATERIAL_RE = /^usemtl/;
 const TEXTURE_RE = /^vt\s/;
@@ -120,34 +127,6 @@ function getShader(gl, id){
     return shader;
 }
 
-function drawObject(model){
-    /*
-     Takes in a model that points to a mesh and draws the object on the scene.
-     Assumes that the setMatrixUniforms function exists
-     as well as the shaderProgram has a uniform attribute called "samplerUniform"
-     */
-//    gl.useProgram(shaderProgram);
-    gl.bindBuffer(gl.ARRAY_BUFFER, model.mesh.vertexBuffer);
-    shaderProgram.applyAttributePointers(model);
-
-    for(let i = 0; i < nobt; i++){
-        // console.log(shaderProgram.texcoordLocation[i], texCoordBuffer[i]);
-        gl.bindBuffer(gl.ARRAY_BUFFER, texCoordBuffer[0]);
-        var size = 2;
-        var type = gl.FLOAT;
-        var normalize = false;
-        var stride = 0;
-        var offset = offsetArray[0];
-        gl.vertexAttribPointer(shaderProgram.texcoordLocation[i], size, type, normalize, stride, offset);
-        gl.uniform1i(shaderProgram.textureLocation[i], i);
-        gl.activeTexture(gl.TEXTURE0 + i);
-        gl.bindTexture(gl.TEXTURE_2D, allTexttures[i]);
-    }
-    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, model.mesh.indexBuffer);
-    setMatrixUniforms();
-    gl.drawElements(gl.TRIANGLES, model.mesh.indexBuffer.numItems, gl.UNSIGNED_SHORT, 0);
-}
-
 function mvPushMatrix(){
     var copy = mat4.create();
     mat4.copy(copy, app.mvMatrix);
@@ -161,49 +140,78 @@ function mvPopMatrix(){
     app.mvMatrix = app.mvMatrixStack.pop();
 }
 
+function mtx_transpose(a) {
+    var b = mtx_zero();
+    for (var i = 0; i < 4; i++) {
+        for (var j = 0; j < 4; j++) {
+            b[i + j*4] = a[j + i*4];
+        }
+    }
+    return b;
+}
+
+function mtx_inverse(m) {
+    var inv = mtx_zero();
+    inv[0]  =  m[5] * m[10] * m[15] - m[5]  * m[11] * m[14] - m[9]  * m[6] * m[15] + m[9] * m[7] * m[14] + m[13] * m[6] * m[11] - m[13] * m[7] * m[10];
+    inv[4]  = -m[4] * m[10] * m[15] + m[4]  * m[11] * m[14] + m[8]  * m[6] * m[15] - m[8] * m[7] * m[14] - m[12] * m[6] * m[11] + m[12] * m[7] * m[10];
+    inv[8]  =  m[4] * m[9]  * m[15] - m[4]  * m[11] * m[13] - m[8]  * m[5] * m[15] + m[8] * m[7] * m[13] + m[12] * m[5] * m[11] - m[12] * m[7] * m[9];
+    inv[12] = -m[4] * m[9]  * m[14] + m[4]  * m[10] * m[13] + m[8]  * m[5] * m[14] - m[8] * m[6] * m[13] - m[12] * m[5] * m[10] + m[12] * m[6] * m[9];
+    inv[1]  = -m[1] * m[10] * m[15] + m[1]  * m[11] * m[14] + m[9]  * m[2] * m[15] - m[9] * m[3] * m[14] - m[13] * m[2] * m[11] + m[13] * m[3] * m[10];
+    inv[5]  =  m[0] * m[10] * m[15] - m[0]  * m[11] * m[14] - m[8]  * m[2] * m[15] + m[8] * m[3] * m[14] + m[12] * m[2] * m[11] - m[12] * m[3] * m[10];
+    inv[9]  = -m[0] * m[9]  * m[15] + m[0]  * m[11] * m[13] + m[8]  * m[1] * m[15] - m[8] * m[3] * m[13] - m[12] * m[1] * m[11] + m[12] * m[3] * m[9];
+    inv[13] =  m[0] * m[9]  * m[14] - m[0]  * m[10] * m[13] - m[8]  * m[1] * m[14] + m[8] * m[2] * m[13] + m[12] * m[1] * m[10] - m[12] * m[2] * m[9];
+    inv[2]  =  m[1] * m[6]  * m[15] - m[1]  * m[7]  * m[14] - m[5]  * m[2] * m[15] + m[5] * m[3] * m[14] + m[13] * m[2] * m[7]  - m[13] * m[3] * m[6];
+    inv[6]  = -m[0] * m[6]  * m[15] + m[0]  * m[7]  * m[14] + m[4]  * m[2] * m[15] - m[4] * m[3] * m[14] - m[12] * m[2] * m[7]  + m[12] * m[3] * m[6];
+    inv[10] =  m[0] * m[5]  * m[15] - m[0]  * m[7]  * m[13] - m[4]  * m[1] * m[15] + m[4] * m[3] * m[13] + m[12] * m[1] * m[7]  - m[12] * m[3] * m[5];
+    inv[14] = -m[0] * m[5]  * m[14] + m[0]  * m[6]  * m[13] + m[4]  * m[1] * m[14] - m[4] * m[2] * m[13] - m[12] * m[1] * m[6]  + m[12] * m[2] * m[5];
+    inv[3]  = -m[1] * m[6]  * m[11] + m[1]  * m[7]  * m[10] + m[5]  * m[2] * m[11] - m[5] * m[3] * m[10] - m[9]  * m[2] * m[7]  + m[9]  * m[3] * m[6];
+    inv[7]  =  m[0] * m[6]  * m[11] - m[0]  * m[7]  * m[10] - m[4]  * m[2] * m[11] + m[4] * m[3] * m[10] + m[8]  * m[2] * m[7]  - m[8]  * m[3] * m[6];
+    inv[11] = -m[0] * m[5]  * m[11] + m[0]  * m[7]  * m[9]  + m[4]  * m[1] * m[11] - m[4] * m[3] * m[9]  - m[8]  * m[1] * m[7]  + m[8]  * m[3] * m[5];
+    inv[15] =  m[0] * m[5]  * m[10] - m[0]  * m[6]  * m[9]  - m[4]  * m[1] * m[10] + m[4] * m[2] * m[9]  + m[8]  * m[1] * m[6]  - m[8]  * m[2] * m[5];
+    det = m[0] * inv[0] + m[1] * inv[4] + m[2] * inv[8] + m[3] * inv[12];
+
+    if (det == 0) {
+        console.log("Error: Non-invertible matrix");
+        return mtx_zero();
+    }
+
+    det = 1.0 / det;
+    for (var i = 0; i < 16; i++) {
+        inv[i] *= det;
+    }
+    return inv;
+}
+
 function setMatrixUniforms(){
     gl.uniformMatrix4fv(shaderProgram.pMatrixUniform, false, app.pMatrix);
     gl.uniformMatrix4fv(shaderProgram.mvMatrixUniform, false, app.mvMatrix);
     gl.uniform3fv(shaderProgram.reverseLightDirectionLocation, normalize([0,0,-5]));
-    // gl.uniform1i(shaderProgram.textureLocation, 0);
-
-    var normalMatrix = mat3.create();
-    mat3.normalFromMat4(normalMatrix, app.mvMatrix);
-    gl.uniformMatrix3fv(shaderProgram.nMatrixUniform, false, normalMatrix);
+ 
+    gl.uniformMatrix4fv(shaderProgram.nMatrixUniform, false, mtx_transpose(mtx_inverse(app.mvMatrix)));
 }
 
 function isPowerOf2(value) {
   return (value & (value - 1)) == 0;
 }
 
-
-function setTextCoord(gl, textures){
-    gl.bufferData(gl.ARRAY_BUFFER,
-        new Float32Array(textures),
-        gl.STATIC_DRAW);
+function getUrl(url){
+    return "http://123.cnviet.net/wp-content/uploads/2018/01/" + url;
 }
 
-function loadImages(urls){
-    for(let i = 0; i < urls.length; i++){
-        var image = new Image();
-        image.src = urls[i];
-        images.push(image);
+function load_textures(url){
+    var tex = gl.createTexture();
+    gl.bindTexture(gl.TEXTURE_2D, tex);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 1, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE,
+          new Uint8Array([0, 0, 255, 255]));
+    var img = new Image();
+    img.onload = function(){
+        gl.bindTexture(gl.TEXTURE_2D, tex);
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, img);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
     }
-}
-
-function getUrls(textures){
-    var urls = [];
-    for(let i = 0; i < textures.length; i++){
-        let url_tmp = textures[i].src;
-        let s = "http://123.cnviet.net/wp-content/uploads/2018/01/" + url_tmp;
-        urls.push(s);
-        // for(let ii = 0; ii < url_tmp.length; ii++){
-        //     let s = "http://123.cnviet.net/wp-content/uploads/2018/01/" + url_tmp[ii];
-        //     urls.push(s);
-        // }
-
-    }
-    return urls;
+    img.src = url;
+    return tex;
 }
 
 function initShaders(){
@@ -220,14 +228,18 @@ function initShaders(){
     }
     gl.useProgram(shaderProgram);
 
-    attr_pos = gl.getAttribLocation(shaderProgram, "vert_pos");
-    gl.enableVertexAttribArray(attr_pos);
+    shaderProgram.pMatrixUniform = gl.getUniformLocation(shaderProgram, "uPMatrix");
+    shaderProgram.mvMatrixUniform = gl.getUniformLocation(shaderProgram, "model_mtx");
+    shaderProgram.nMatrixUniform = gl.getUniformLocation(shaderProgram, "norm_mtx");
+
+    shaderProgram.attr_pos = gl.getAttribLocation(shaderProgram, "vert_pos");
+    gl.enableVertexAttribArray(shaderProgram.attr_pos);
     attr_tang = gl.getAttribLocation(shaderProgram, "vert_tang");
     gl.enableVertexAttribArray(attr_tang);
-    attr_bitang = gl.getAttribLocation(shaderProgram, "vert_bitang");
-    gl.enableVertexAttribArray(attr_bitang);
-    attr_uv = gl.getAttribLocation(shaderProgram, "vert_uv");
-    gl.enableVertexAttribArray(attr_uv);
+    shaderProgram.attr_bitang = gl.getAttribLocation(shaderProgram, "vert_bitang");
+    gl.enableVertexAttribArray(shaderProgram.attr_bitang);
+    shaderProgram.attr_uv = gl.getAttribLocation(shaderProgram, "vert_uv");
+    gl.enableVertexAttribArray(shaderProgram.attr_uv);
 }
 
 function initBuffers(){
@@ -237,6 +249,7 @@ function initBuffers(){
         gl.bindBuffer(gl.ARRAY_BUFFER, posBuffer);
         var posData = mesh.verts;
         gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(posData), gl.STATIC_DRAW);
+        posBufferArr.push(posBuffer);
         //end position
 
         //tangents
@@ -244,6 +257,7 @@ function initBuffers(){
         gl.bindBuffer(gl.ARRAY_BUFFER, tangBuffer);
         var tangData = mesh.tangents;
         gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(tangData), gl.STATIC_DRAW);
+        tangBufferArr.push(tangBuffer);
         //end tangent
 
         //Bitangents
@@ -251,6 +265,7 @@ function initBuffers(){
         gl.bindBuffer(gl.ARRAY_BUFFER, bitTangBuffer);
         var bitTangData = mesh.bitTangents;
         gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(bitTangData), gl.STATIC_DRAW);
+        bitTangBufferArr.push(bitTangBuffer);
         //end bit
 
         //uvs
@@ -258,6 +273,7 @@ function initBuffers(){
         gl.bindBuffer(gl.ARRAY_BUFFER, uv);
         var uv_data = mesh.uvs;
         gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(uv_data), gl.STATIC_DRAW);
+        uvsArr.push(uvs);
         //end uvs
 
         //index buffer
@@ -265,8 +281,40 @@ function initBuffers(){
         gl.bindBuffer(gl.ARRAY_BUFFER, index_buffer);
         var indices = mesh.indices;
         gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(indices), gl.STATIC_DRAW);
+        indexBufferArr.push(index_buffer);
         //end 
     }
+}
+
+function initTextures(){
+    for(var mesh in app.meshes){
+        var tex_src = getUrl(mesh.textures);
+        var bump_src = getUrl(mesh.bumpMap);
+        var isBump = mesh.isBump;
+
+        if(mesh.textures){
+            type = 1;
+        }else{
+            if(mesh.bumpMap) type = 2;
+            else type = 3;
+        }
+
+        var text_diffuse = load_textures(tex_src);
+        textDiffuseArr.push(text_diffuse);
+        var text_norm = load_textures(bump_src);
+        textNormArr.push(text_norm);        
+    }
+}
+
+function drawObject(model){
+    /*
+     Takes in a model that points to a mesh and draws the object on the scene.
+     Assumes that the setMatrixUniforms function exists
+     as well as the shaderProgram has a uniform attribute called "samplerUniform"
+     */
+     for(var i = 0; i < app.meshes.length; i++){
+        
+     } 
 }
 
 function animate(){
@@ -644,6 +692,7 @@ function webGLStart(meshes){
     gl = initWebGL(canvas);
     initShaders();
     initBuffers();
+    initTextures();
     gl.clearColor(0.5, 0.5, 0.5, 1.0);
     gl.enable(gl.DEPTH_TEST);
 

@@ -15,7 +15,7 @@
 
         uniform mat4 model_mtx;
         uniform mat4 norm_mtx;
-        uniform mat4 proj_mtx;
+        uniform mat4 uPMatrix;
 
         varying vec2 frag_uv;
         varying vec3 ts_light_pos; // Tangent space values
@@ -39,7 +39,8 @@
 
         void main(void)
         {
-            gl_Position = proj_mtx * vec4(vert_pos, 1.0);
+            vPosition = model_mtx * vec4(vert_pos, 1.0);
+            gl_Position = uPMatrix * vPosition;
             ts_frag_pos = vec3(model_mtx * vec4(vert_pos, 1.0));
             vec3 vert_norm = cross(vert_bitang, vert_tang);
 

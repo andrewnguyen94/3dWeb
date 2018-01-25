@@ -258,7 +258,7 @@ function setMatrixUniforms(){
     gl.uniform3fv(shaderProgram.reverseLightDirectionLocation, normalize([0,0,-5]));
     // gl.uniform1i(shaderProgram.textureLocation, 0);
 
-    var normalMatrix = mat3.create();
+    var normalMatrix = mat4.create();
     mat3.normalFromMat4(normalMatrix, app.mvMatrix);
     gl.uniformMatrix3fv(shaderProgram.nMatrixUniform, false, normalMatrix);
 }
