@@ -24,6 +24,8 @@ var indexBufferArr = [];
 var textDiffuseArr = [];
 var textNormArr = [];
 
+num_indices = [];
+
 
 var reader = new FileReader();
 var text_obj, text_mtl;
@@ -280,8 +282,10 @@ function initBuffers(){
         var index_buffer = gl.createBuffer();
         gl.bindBuffer(gl.ARRAY_BUFFER, index_buffer);
         var indices = mesh.indices;
-        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(indices), gl.STATIC_DRAW);
+        gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(indices), gl.STATIC_DRAW);
         indexBufferArr.push(index_buffer);
+        var num_index = indices.length;
+        num_indices.push(num_index);
         //end 
     }
 }
@@ -312,9 +316,20 @@ function drawObject(model){
      Assumes that the setMatrixUniforms function exists
      as well as the shaderProgram has a uniform attribute called "samplerUniform"
      */
-     for(var i = 0; i < app.meshes.length; i++){
-        
-     } 
+    for(var i = 0; i < app.meshes.length; i++){
+        gl.bindBuffer(gl.ARRAY_BUFFER, posBufferArr[i]);
+        gl.vertexAttribPointer(shaderProgram.attr_pos, 3, gl.FLOAT, false, 0, 0);
+
+        gl.bindBuffer(gl.ARRAY_BUFFER, tangBufferArr[i]);
+        gl.vertexAttribPointer(shaderProgram.attr_tang, 3, gl.FLOAT, false, 0, 0);
+
+        gl.bindBuffer(gl.ARRAY_BUFFER, bitTangBufferArr[i]);
+        gl.vertexAttribPointer(shaderProgram.attr_bitang, 3, gl.FLOAT, false, 0, 0);
+
+        gl.bindBuffer(gl.ARRAY_BUFFER, uvsArr[i]);
+        gl.vertexAttribPointer(shaderProgram.attr_uv, 2, gl.FLOAT, false, 0, 0);
+        gl.drawElements(gl.TRIANGLES, num_indices[i], gl.UNSIGNED_BYTE, 0);    
+    } 
 }
 
 function animate(){
