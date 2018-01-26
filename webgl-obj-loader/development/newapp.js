@@ -5,7 +5,7 @@ var gl = {};
 // the canvas element
 var canvas = null;
 // main shader program
-var shaderProgram = null;
+var shaderProgramArr = [];
 // main app object
 var app = {};
 app.meshes = {};
@@ -152,6 +152,15 @@ function mtx_transpose(a) {
     return b;
 }
 
+function mtx_zero() {
+    return [
+        0, 0, 0, 0,
+        0, 0, 0, 0,
+        0, 0, 0, 0,
+        0, 0, 0, 0
+    ];
+}
+
 function mtx_inverse(m) {
     var inv = mtx_zero();
     inv[0]  =  m[5] * m[10] * m[15] - m[5]  * m[11] * m[14] - m[9]  * m[6] * m[15] + m[9] * m[7] * m[14] + m[13] * m[6] * m[11] - m[13] * m[7] * m[10];
@@ -184,14 +193,6 @@ function mtx_inverse(m) {
     return inv;
 }
 
-function setMatrixUniforms(){
-    gl.uniformMatrix4fv(shaderProgram.pMatrixUniform, false, app.pMatrix);
-    gl.uniformMatrix4fv(shaderProgram.mvMatrixUniform, false, app.mvMatrix);
-    gl.uniform3fv(shaderProgram.reverseLightDirectionLocation, normalize([0,0,-5]));
- 
-    gl.uniformMatrix4fv(shaderProgram.nMatrixUniform, false, mtx_transpose(mtx_inverse(app.mvMatrix)));
-}
-
 function isPowerOf2(value) {
   return (value & (value - 1)) == 0;
 }
@@ -217,118 +218,155 @@ function load_textures(url){
 }
 
 function initShaders(){
-    var fragmentShader = getShader(gl, "shader-fs");
-    var vertexShader = getShader(gl, "shader-vs");
+    for(let i = 0; i < app.meshes.length; i++){
+        if(app.meshes[i].indices.length){
+            var fragmentShader = getShader(gl, "shader-fs");
+            var vertexShader = getShader(gl, "shader-vs");
 
-    shaderProgram = gl.createProgram();
-    gl.attachShader(shaderProgram, vertexShader);
-    gl.attachShader(shaderProgram, fragmentShader);
-    gl.linkProgram(shaderProgram);
+            var shaderProgram = gl.createProgram();
+            gl.attachShader(shaderProgram, vertexShader);
+            gl.attachShader(shaderProgram, fragmentShader);
+            gl.linkProgram(shaderProgram);
 
-    if (!gl.getProgramParameter(shaderProgram, gl.LINK_STATUS)){
-        alert("Could not initialise shaders");
+            if (!gl.getProgramParameter(shaderProgram, gl.LINK_STATUS)){
+                alert("Could not initialise shaders");
+            }
+            gl.useProgram(shaderProgram);
+            shaderProgram.pMatrixUniform = gl.getUniformLocation(shaderProgram, "uPMatrix");
+            shaderProgram.mvMatrixUniform = gl.getUniformLocation(shaderProgram, "model_mtx");
+            shaderProgram.nMatrixUniform = gl.getUniformLocation(shaderProgram, "norm_mtx");
+
+            shaderProgram.tex_norm = gl.getUniformLocation(shaderProgram, "tex_norm");
+            shaderProgram.tex_diffuse = gl.getUniformLocation(shaderProgram, "tex_diffuse");
+            shaderProgram.type = gl.getUniformLocation(shaderProgram, "type");
+
+            shaderProgram.attr_pos = gl.getAttribLocation(shaderProgram, "vert_pos");
+            gl.enableVertexAttribArray(shaderProgram.attr_pos);
+            attr_tang = gl.getAttribLocation(shaderProgram, "vert_tang");
+            gl.enableVertexAttribArray(attr_tang);
+            shaderProgram.attr_bitang = gl.getAttribLocation(shaderProgram, "vert_bitang");
+            gl.enableVertexAttribArray(shaderProgram.attr_bitang);
+            shaderProgram.attr_uv = gl.getAttribLocation(shaderProgram, "vert_uv");
+            gl.enableVertexAttribArray(shaderProgram.attr_uv);
+
+            shaderProgramArr.push(shaderProgram);
+        }
     }
-    gl.useProgram(shaderProgram);
 
-    shaderProgram.pMatrixUniform = gl.getUniformLocation(shaderProgram, "uPMatrix");
-    shaderProgram.mvMatrixUniform = gl.getUniformLocation(shaderProgram, "model_mtx");
-    shaderProgram.nMatrixUniform = gl.getUniformLocation(shaderProgram, "norm_mtx");
-
-    shaderProgram.attr_pos = gl.getAttribLocation(shaderProgram, "vert_pos");
-    gl.enableVertexAttribArray(shaderProgram.attr_pos);
-    attr_tang = gl.getAttribLocation(shaderProgram, "vert_tang");
-    gl.enableVertexAttribArray(attr_tang);
-    shaderProgram.attr_bitang = gl.getAttribLocation(shaderProgram, "vert_bitang");
-    gl.enableVertexAttribArray(shaderProgram.attr_bitang);
-    shaderProgram.attr_uv = gl.getAttribLocation(shaderProgram, "vert_uv");
-    gl.enableVertexAttribArray(shaderProgram.attr_uv);
 }
 
 function initBuffers(){
-    for(var mesh in app.meshes){
-        //position
-        var posBuffer = gl.createBuffer();
-        gl.bindBuffer(gl.ARRAY_BUFFER, posBuffer);
-        var posData = mesh.verts;
-        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(posData), gl.STATIC_DRAW);
-        posBufferArr.push(posBuffer);
-        //end position
+    for(var i = 0; i < app.meshes.length; i++){
+        var mesh = app.meshes[i];
+        if(mesh.indices.length){
+            console.log(mesh);
+            //position
+            var posBuffer = gl.createBuffer();
+            gl.bindBuffer(gl.ARRAY_BUFFER, posBuffer);
+            var posData = mesh.verts;
+            gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(posData), gl.STATIC_DRAW);
+            posBufferArr.push(posBuffer);
+            //end position
 
-        //tangents
-        var tangBuffer = gl.createBuffer();
-        gl.bindBuffer(gl.ARRAY_BUFFER, tangBuffer);
-        var tangData = mesh.tangents;
-        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(tangData), gl.STATIC_DRAW);
-        tangBufferArr.push(tangBuffer);
-        //end tangent
+            //tangents
+            var tangBuffer = gl.createBuffer();
+            gl.bindBuffer(gl.ARRAY_BUFFER, tangBuffer);
+            var tangData = mesh.tangents;
+            gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(tangData), gl.STATIC_DRAW);
+            tangBufferArr.push(tangBuffer);
+            //end tangent
 
-        //Bitangents
-        var bitTangBuffer = gl.createBuffer();
-        gl.bindBuffer(gl.ARRAY_BUFFER, bitTangBuffer);
-        var bitTangData = mesh.bitTangents;
-        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(bitTangData), gl.STATIC_DRAW);
-        bitTangBufferArr.push(bitTangBuffer);
-        //end bit
+            //Bitangents
+            var bitTangBuffer = gl.createBuffer();
+            gl.bindBuffer(gl.ARRAY_BUFFER, bitTangBuffer);
+            var bitTangData = mesh.bitTangents;
+            gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(bitTangData), gl.STATIC_DRAW);
+            bitTangBufferArr.push(bitTangBuffer);
+            //end bit
 
-        //uvs
-        var uvs = gl.createBuffer();
-        gl.bindBuffer(gl.ARRAY_BUFFER, uv);
-        var uv_data = mesh.uvs;
-        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(uv_data), gl.STATIC_DRAW);
-        uvsArr.push(uvs);
-        //end uvs
+            //uvs
+            var uvs = gl.createBuffer();
+            gl.bindBuffer(gl.ARRAY_BUFFER, uvs);
+            var uv_data = mesh.uvs;
+            gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(uv_data), gl.STATIC_DRAW);
+            uvsArr.push(uvs);
+            //end uvs
 
-        //index buffer
-        var index_buffer = gl.createBuffer();
-        gl.bindBuffer(gl.ARRAY_BUFFER, index_buffer);
-        var indices = mesh.indices;
-        gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(indices), gl.STATIC_DRAW);
-        indexBufferArr.push(index_buffer);
-        var num_index = indices.length;
-        num_indices.push(num_index);
-        //end 
+            //index buffer
+            var indices = mesh.indices;
+            var index_buffer = gl.createBuffer();
+            gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, index_buffer);
+            gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(indices), gl.STATIC_DRAW);
+            indexBufferArr.push(index_buffer);
+            var num_index = indices.length;
+            num_indices.push(num_index);
+            //end
+        } 
     }
 }
 
 function initTextures(){
-    for(var mesh in app.meshes){
-        var tex_src = getUrl(mesh.textures);
-        var bump_src = getUrl(mesh.bumpMap);
-        var isBump = mesh.isBump;
+    for(var i = 0; i < app.meshes.length; i++){
+        var mesh = app.meshes[i];
+        if(mesh.indices){
+            var tex_src = getUrl(mesh.textures);
+            var bump_src = getUrl(mesh.bumpMap);
+            var isBump = mesh.isBump;
 
-        if(mesh.textures){
-            type = 1;
-        }else{
-            if(mesh.bumpMap) type = 2;
-            else type = 3;
-        }
+            if(mesh.bumpMap){
+                type = 1;
+            }else{
+                type = 0;
+            }
 
-        var text_diffuse = load_textures(tex_src);
-        textDiffuseArr.push(text_diffuse);
-        var text_norm = load_textures(bump_src);
-        textNormArr.push(text_norm);        
+            var text_diffuse = load_textures(tex_src);
+            textDiffuseArr.push(text_diffuse);
+            var text_norm = load_textures(bump_src);
+            textNormArr.push(text_norm);  
+        }      
     }
 }
 
-function drawObject(model){
+function drawObject(){
     /*
      Takes in a model that points to a mesh and draws the object on the scene.
      Assumes that the setMatrixUniforms function exists
      as well as the shaderProgram has a uniform attribute called "samplerUniform"
      */
     for(var i = 0; i < app.meshes.length; i++){
-        gl.bindBuffer(gl.ARRAY_BUFFER, posBufferArr[i]);
-        gl.vertexAttribPointer(shaderProgram.attr_pos, 3, gl.FLOAT, false, 0, 0);
+        var mesh = app.meshes[i];
+        if(mesh.indices.length){
+            console.log(shaderProgramArr[i]);
+            gl.bindBuffer(gl.ARRAY_BUFFER, posBufferArr[i]);
+            gl.vertexAttribPointer(shaderProgramArr[i].attr_pos, 3, gl.FLOAT, false, 0, 0);
 
-        gl.bindBuffer(gl.ARRAY_BUFFER, tangBufferArr[i]);
-        gl.vertexAttribPointer(shaderProgram.attr_tang, 3, gl.FLOAT, false, 0, 0);
+            gl.bindBuffer(gl.ARRAY_BUFFER, tangBufferArr[i]);
+            gl.vertexAttribPointer(shaderProgramArr[i].attr_tang, 3, gl.FLOAT, false, 0, 0);
 
-        gl.bindBuffer(gl.ARRAY_BUFFER, bitTangBufferArr[i]);
-        gl.vertexAttribPointer(shaderProgram.attr_bitang, 3, gl.FLOAT, false, 0, 0);
+            gl.bindBuffer(gl.ARRAY_BUFFER, bitTangBufferArr[i]);
+            gl.vertexAttribPointer(shaderProgramArr[i].attr_bitang, 3, gl.FLOAT, false, 0, 0);
 
-        gl.bindBuffer(gl.ARRAY_BUFFER, uvsArr[i]);
-        gl.vertexAttribPointer(shaderProgram.attr_uv, 2, gl.FLOAT, false, 0, 0);
-        gl.drawElements(gl.TRIANGLES, num_indices[i], gl.UNSIGNED_BYTE, 0);    
+            gl.bindBuffer(gl.ARRAY_BUFFER, uvsArr[i]);
+            gl.vertexAttribPointer(shaderProgramArr[i].attr_uv, 2, gl.FLOAT, false, 0, 0);
+
+            gl.uniformMatrix4fv(shaderProgramArr[i].pMatrixUniform, false, app.pMatrix);
+            gl.uniformMatrix4fv(shaderProgramArr[i].mvMatrixUniform, false, app.mvMatrix);
+            // gl.uniform3fv(shaderProgram.reverseLightDirectionLocation, normalize([0,0,-5]));
+         
+            gl.uniformMatrix4fv(shaderProgramArr[i].nMatrixUniform, false, mtx_transpose(mtx_inverse(app.mvMatrix)));
+            gl.uniform1i(shaderProgramArr[i].type, type);
+            //active textures
+            gl.activeTexture(gl.TEXTURE0);
+            gl.bindTexture(gl.TEXTURE_2D, textNormArr[i]);
+            gl.uniform1i(shaderProgramArr[i].text_norm, 0);
+
+            gl.activeTexture(gl.TEXTURE1);
+            gl.bindTexture(gl.TEXTURE_2D, textDiffuseArr[i]);
+            gl.uniform1i(shaderProgramArr[i].tex_diffuse, 1);
+            //end
+
+            gl.drawElements(gl.TRIANGLES, num_indices[i], gl.UNSIGNED_BYTE, 0);
+        }    
     } 
 }
 
@@ -590,7 +628,7 @@ function drawScene(){
     app.mvMatrix = m4.inverse(app.camera);
     // gl.uniform3fv(shaderProgram.reverseLightDirectionLocation, normalize([0,0,-5]));
     mvPushMatrix();
-        drawObject(app.models.die);
+        drawObject();
     mvPopMatrix();
 }
 
