@@ -202,7 +202,7 @@ def main():
 			}
 			datas_bump.append(data)
 
-	with open('C:\\Users\\andrew_nguyen\\Downloads\\hihi\\data.json', 'w') as outfile:
+	with open('C:\\Users\\andrew_nguyen\\Downloads\\hihi\\data_old.json', 'w') as outfile:
 		try:
 			data = ""
 			if datas_text:

@@ -101,6 +101,12 @@ class Mesh(object):
 		self.verts = 0
 		self.indices = []
 		self.hashobjs = []
+		self.currentIndex = 0;
+
+	def set_currentIndex(self, id):
+		self.currentIndex = id
+	def get_currentIndex(self):
+		return self.currentIndex
 
 	def set_hashobjs(self, hashobjs):
 		self.hashobjs = hashobjs
@@ -342,7 +348,7 @@ def main():
 		f = open(fp, 'r')
 		lines = f.readlines()
 		mesh = None
-		index = 0;
+		index = 0
 		vertices = []
 		normals = []
 		uvs = []
@@ -355,6 +361,7 @@ def main():
 				if l[0] == 'usemtl':
 					name = getName(l)
 					mesh = getMeshFromName(name, MeshArray)
+					index = mesh.get_currentIndex()
 				if l[0] == 'v':
 					vs = getVertices(l)
 					for i in range(len(vs)):
@@ -424,6 +431,7 @@ def main():
 					else:
 						tmp_uvs = []
 
+					print len(faces_pos)
 					for i in range(len(faces_pos)):
 						tmp_verts.append(pos_arr[int(faces_pos[i]) * 3 - 3])
 						tmp_verts.append(pos_arr[int(faces_pos[i]) * 3 - 2])
@@ -439,6 +447,7 @@ def main():
 						tmp_uvs.append(uv_arr[int(faces_uvs[i]) * 2 - 2])
 						tmp_uvs.append(uv_arr[int(faces_uvs[i]) * 2 - 1])
 					mesh.set_uvs_buff(tmp_uvs)
+					mesh.set_currentIndex(index);
 					faces_pos = []
 					faces_nors = []
 					faces_uvs = []
@@ -517,7 +526,7 @@ def main():
 		}
 		datas.append(data)
 
-	with open('C:\\Users\\andrew_nguyen\\Downloads\\hihi\\data.json', 'w') as outfile:
+	with open('C:\\Users\\andrew_nguyen\\Downloads\\aaa\\data.json', 'w') as outfile:
 		try :
 			data = ""
 			if MeshArray:

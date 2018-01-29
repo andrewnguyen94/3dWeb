@@ -46,7 +46,7 @@
 
         uniform mat4 uMVMatrix;
         uniform mat4 uPMatrix;
-        uniform mat3 uNMatrix;
+        uniform mat4 uNMatrix;
 
         varying vec2 vTextureCoord0;
         varying vec3 vTransformedNormal;
@@ -64,13 +64,13 @@
             vPosition = uMVMatrix * vec4(aVertexPosition, 1.0);
             gl_Position = uPMatrix * vPosition;
             vTextureCoord0 = a_texcoord0;
-            vTransformedNormal = uNMatrix * aVertexNormal;
+            vTransformedNormal = mat3(uNMatrix) * aVertexNormal;
         }
     </script>
     <script type="text/javascript" src="gl-matrix.js"></script>
     <script type='text/javascript' src='../dist/webgl-obj-loader.js'></script>
     <!-- <script src="C:/Users/andrew_nguyen/Downloads/aaa/data.json"></script> -->
-    <script src="C:/Users/andrew_nguyen/Downloads/hihi/data.json"></script>
+    <script src="C:/Users/andrew_nguyen/Downloads/hihi/data_old.json"></script>
     <!-- <script type='text/javascript' src='../dist/webgl-obj-loader.min.js'></script> -->
     <script type='text/javascript' src='app.js'></script>
 </head>

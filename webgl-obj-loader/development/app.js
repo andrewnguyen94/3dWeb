@@ -259,8 +259,10 @@ function setMatrixUniforms(){
     // gl.uniform1i(shaderProgram.textureLocation, 0);
 
     var normalMatrix = mat4.create();
+    console.log(app.mvMatrix);
     mat3.normalFromMat4(normalMatrix, app.mvMatrix);
-    gl.uniformMatrix3fv(shaderProgram.nMatrixUniform, false, normalMatrix);
+    console.log(normalMatrix);
+    gl.uniformMatrix4fv(shaderProgram.nMatrixUniform, false, normalMatrix);
 }
 
 function isPowerOf2(value) {

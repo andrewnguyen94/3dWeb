@@ -76,17 +76,6 @@ const GLFRAG = /^gl_FragColor\s/;
 const ATTR = /^attribute\s/;
 const VTEX0 = /^vTextureCoord0\s/;
 
-window.requestAnimFrame = (function (){
-    return window.requestAnimationFrame ||
-        window.webkitRequestAnimationFrame ||
-        window.mozRequestAnimationFrame ||
-        window.oRequestAnimationFrame ||
-        window.msRequestAnimationFrame ||
-        function (/* function FrameRequestCallback */ callback, /* DOMElement Element */ element){
-            return window.setTimeout(callback, 1000 / 60);
-        };
-})();
-
 function initWebGL(canvas){
     try{
         // Try to grab the standard context. If it fails, fallback to experimental.
@@ -256,7 +245,6 @@ function initShaders(mesh){
     gl.enableVertexAttribArray(shaderProgram.attr_bitang);
     shaderProgram.attr_uv = gl.getAttribLocation(shaderProgram, "vert_uv");
     gl.enableVertexAttribArray(shaderProgram.attr_uv);
-    console.log(shaderProgram);
 
 }
 
@@ -273,7 +261,6 @@ function initBuffers(mesh){
     tangBuffer = gl.createBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER, tangBuffer);
     var tangData = mesh.tangent;
-    console.log(mesh);
     gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(tangData), gl.STATIC_DRAW);
     // tangBufferArr.push(tangBuffer);
     //end tangent
@@ -321,14 +308,12 @@ function initTextures(mesh){
     // textNormArr.push(text_norm); 
 }
 
-function drawObject(mesh){
+function drawObject(){
     /*
      Takes in a model that points to a mesh and draws the object on the scene.
      Assumes that the setMatrixUniforms function exists
      as well as the shaderProgram has a uniform attribute called "samplerUniform"
      */
-            // console.log(i);
-            // console.log(shaderProgramArr[i]);
     gl.bindBuffer(gl.ARRAY_BUFFER, posBuffer);
     gl.vertexAttribPointer(shaderProgram.attr_pos, 3, gl.FLOAT, false, 0, 0);
 
@@ -345,7 +330,10 @@ function drawObject(mesh){
     gl.uniformMatrix4fv(shaderProgram.mvMatrixUniform, false, app.mvMatrix);
     // gl.uniform3fv(shaderProgram.reverseLightDirectionLocation, normalize([0,0,-5]));
  
-    gl.uniformMatrix4fv(shaderProgram.nMatrixUniform, false, mtx_transpose(mtx_inverse(app.mvMatrix)));
+    var normalMatrix = mat4.create();
+    mat3.normalFromMat4(normalMatrix, app.mvMatrix);
+    // gl.uniformMatrix3fv(shaderProgram.nMatrixUniform, false, normalMatrix);
+    gl.uniformMatrix4fv(shaderProgram.nMatrixUniform, false, normalMatrix);
     gl.uniform1i(shaderProgram.type, type);
     //active textures
     gl.activeTexture(gl.TEXTURE0);
@@ -359,20 +347,6 @@ function drawObject(mesh){
 
     gl.drawElements(gl.TRIANGLES, num_index, gl.UNSIGNED_BYTE, 0);     
 }
-
-function animate(){
-    app.timeNow = new Date().getTime();
-    app.elapsed = app.timeNow - app.lastTime;
-    if (!app.time) {
-        app.time = 0.0;
-    }
-    app.time += app.elapsed / 1000.0;
-    if (app.lastTime !== 0){
-        // do animations
-    }
-    app.lastTime = app.timeNow;
-}
-
 
 var m4 = {
     perspective: function(fieldOfViewInRadians, aspect, near, far) {
@@ -599,35 +573,6 @@ function vec4(v){
     return v;
 }
 
-function drawScene(mesh){
-    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-    mat4.identity(app.camera);
-    if(tmp_cam != null){
-        app.camera = {...tmp_cam};
-    }
-    if(isRotateX){
-        mat4.rotate(app.camera, app.camera, degToRad(cameraAngleRadians_x), [1,0,0]);
-        tmp_cam ={...app.camera};
-    }
-    if(isRotateY){
-        mat4.rotate(app.camera, app.camera, degToRad(cameraAngleRadians_y), [0,1,0]);
-        tmp_cam ={...app.camera};
-    }
-    mat4.translate(app.camera, app.camera, [0,0,2]);
-    mat4.perspective(app.pMatrix, fov * Math.PI / 180.0, gl.viewportWidth / gl.viewportHeight, 0.01, 1000.0);
-    app.mvMatrix = m4.inverse(app.camera);
-    // gl.uniform3fv(shaderProgram.reverseLightDirectionLocation, normalize([0,0,-5]));
-    mvPushMatrix();
-        drawObject();
-    mvPopMatrix();
-}
-
-function tick(mesh){
-    requestAnimFrame(tick);
-    drawScene(mesh);
-    animate();
-}
-
 var keys = {37: 1, 38: 1, 39: 1, 40: 1};
 
 function preventDefault(e) {
@@ -713,18 +658,42 @@ var scroll_state = 0;
 
 function handleOnWheel(event){
     if(event.wheelDelta < 0 ){
-        if(fov < 175){
+        if(fov < 175 && fov >= 5){
             fov += 5;
+        }else if(fov < 5){
+            fov += 1
         }
     }else if(event.wheelDelta > 0){
         if(fov > 5){
             fov -= 5;
+        }else if(fov > 0 && fov <= 5){
+            fov -= 1
         }
     }
 }
 
-function handleMouseMoveDocument(event){
+window.requestAnimFrame = (function (){
+    return window.requestAnimationFrame ||
+        window.webkitRequestAnimationFrame ||
+        window.mozRequestAnimationFrame ||
+        window.oRequestAnimationFrame ||
+        window.msRequestAnimationFrame ||
+        function (/* function FrameRequestCallback */ callback, /* DOMElement Element */ element){
+            return window.setTimeout(callback, 1000 / 60);
+        };
+})();
 
+function animate(){
+    app.timeNow = new Date().getTime();
+    app.elapsed = app.timeNow - app.lastTime;
+    if (!app.time) {
+        app.time = 0.0;
+    }
+    app.time += app.elapsed / 1000.0;
+    if (app.lastTime !== 0){
+        // do animations
+    }
+    app.lastTime = app.timeNow;
 }
 
 function webGLStart(meshes){
@@ -738,308 +707,98 @@ function webGLStart(meshes){
     canvas.onmousedown = handleMouseDown;
     document.onmouseup = handleMouseUp;
     canvas.onmousemove = handleMouseMove;
-    document.onmousemove = handleMouseMoveDocument;
+    // document.onmousemove = handleMouseMoveDocument;
     // canvas.addEventListener("scroll", handleOnWheel);
     canvas.addEventListener('wheel', handleOnWheel);
-    for(var i = 0; i < app.meshes.length; i++){
+    tick();
+    // for(var i = 0; i < app.meshes.length; i++){
+    //     var mesh = app.meshes[i];
+    //     if(mesh.indices.length){
+    //         initShaders(mesh);
+    //         initBuffers(mesh);
+    //         initTextures(mesh);
+    //         tick(mesh);
+    //     }
+    // }
+}
+
+function tick(){
+    requestAnimFrame(tick);
+    drawScene();
+    // animate();
+}
+
+function drawScene(){
+    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+    mat4.identity(app.camera);
+    if(tmp_cam != null){
+        app.camera = {...tmp_cam};
+    }
+    if(isRotateX){
+        mat4.rotate(app.camera, app.camera, degToRad(cameraAngleRadians_x), [1,0,0]);
+        tmp_cam ={...app.camera};
+    }
+    if(isRotateY){
+        mat4.rotate(app.camera, app.camera, degToRad(cameraAngleRadians_y), [0,1,0]);
+        tmp_cam ={...app.camera};
+    }
+    mat4.translate(app.camera, app.camera, [0,0,2]);
+    mat4.perspective(app.pMatrix, fov * Math.PI / 180.0, gl.viewportWidth / gl.viewportHeight, 0.01, 1000.0);
+    app.mvMatrix = m4.inverse(app.camera);
+    // gl.uniform3fv(shaderProgram.reverseLightDirectionLocation, normalize([0,0,-5]));
+    for(let i = 0; i < app.meshes.length; i++){
         var mesh = app.meshes[i];
         if(mesh.indices.length){
             initShaders(mesh);
             initBuffers(mesh);
             initTextures(mesh);
-            tick(mesh);
+            drawObject();
         }
     }
-    // initShaders();
-    // initBuffers();
-    // initTextures();
-
-
-//    drawScene();
+    // mvPushMatrix();
+    // mvPopMatrix();
 }
 
-// window.onload = function (){
-//     // OBJ.downloadMeshes({
-//     //     'suzanne': '/development/models/suzanne.obj'
-//     // }, webGLStart);
-//     var models = {};
-
-//     let t = [];
-//     for (let i = 0; i < data.length; i++){
-//         t.push(data[i].buff); 
-//     }
-//     nobt = t.length;
-//     url_images = getUrls(data);
-//     let p = OBJ.downloadModels([
-//         {
-//             name: 'die',
-//             obj: 'http://123.cnviet.net/wp-content/uploads/2018/01/zimCreateArchive_hihi.obj',
-//             mtl: 'http://123.cnviet.net/wp-content/uploads/2018/01/zimCreateArchive_hihi.mtl',
-//         }// ,
-//         // {
-//             // obj: '/development/models/suzanne.obj'
-//         // }
-//     ]);
-    
-
-//     p.then((models) => {
-//         for ([name, mesh] of Object.entries(models)) {
-//             console.log('Name:', name);
-//             console.log('Mesh:', mesh);
-//         }
-//         webGLStart(models,t);
-//     });
-// };
-
-function setFragmentShader(gl, id){
-    var shader = document.getElementById(id);
-    var text = shader.text;
-    var textArray = text.split("\n");
-    var count = 0;
-    var count1 = 0; 
-    var count2 = 0;
-    var p = [];
-    for(let i = 0; i < textArray.length; i++){
-        p.push(textArray[i]);
-    }
-
-    for(let i = 0; i < textArray.length; i++){
-        var t = textArray[i].trim();
-        let u = textArray[i].search(/\S/);
-        const elements = t.split(WHITESPACE_RE);
-        elements.shift();
-        if(VARYING.test(t)){
-            if(elements[0] == "vec2" && elements[1] == "vTextureCoord0;"){
-                for(let iii = 0; iii < nobt; iii++){
-                    if(nobt == 1){
-                        break;
-                    }else{
-                        let apps = "";
-                        for(let ii = 0; ii < u; ii++){
-                            apps += " ";
-                        }
-                        count++;
-                        if(iii == 0) continue;
-                        let c = "varying vec2 vTextureCoord" + iii + ";";
-                        apps += c;
-                        p.splice(i + iii, 0, apps);
-                    }
-                }
-            }
-        }
-        if(UNIFORM.test(t)){
-            if(elements[0] == "sampler2D"){
-                for(let iii = 0; iii < nobt; iii++){
-                    if(nobt == 1){
-                        break;
-                    }else{
-                        count1++;
-                        let apps = "";
-                        for(let ii = 0; ii < u; ii++){
-                            apps += " ";
-                        }
-                        if(iii == 0) continue;
-                        let c = "uniform sampler2D u_texture" + iii + ";";
-                        apps += c;
-                        p.splice(i+iii+count-1, 0 ,apps);
-                    }
-                }
-            }
-        }
-        if(VEC4.test(t)){
-            if(elements[0] == "color0"){
-                for(let iii = 0; iii < nobt; iii++){
-                    if(nobt == 1) break;
-                    else{
-                        count2++;
-                        let apps = "";
-                        for(let ii = 0; ii < u; ii++){
-                            apps += " ";
-                        }
-                        if(iii == 0) continue;
-                        let c = "vec4 color" + iii + " = texture2D(u_texture" + iii + ", vTextureCoord" + iii + ");"
-                        apps += c;
-                        p.splice(i + iii + count + count1 -2, 0, apps); 
-                    }
-                }
-            }
-        }
-        if(t[0] == "}"){
-            let t1 = textArray[i - 1].search(/\S/);
-            let apps = "";
-            for(let ii = 0; ii < t1; ii++){
-              apps += " ";
-            }
-            apps += "gl_FragColor = ";
-            for(let iii = 0; iii < nobt; iii++){
-              if(iii < nobt - 1) apps += "color" + iii + "*";
-              else apps += "color" + iii;
-            }
-            apps += "* color_0;"
-            if(count + count1 + count2 > 0){
-                p.splice(i + count + count1 + count2 - 3, 0, apps);
-            }else{
-                p.splice(i + count + count1 + count2, 0, apps);
-            } 
-            
-        }
-    }
-    var q = "";
-    for(let i = 0; i < p.length; i++){
-        if(i < p.length -1 ){
-            q += p[i] + '\n';
-        }else{
-            q += p[i];
-        }
-    }
-    shader.text = q;
-    console.log(shader);
-}
-
-function setVertexShader(gl, id){
-    var shader = document.getElementById(id);
-    var text = shader.text;
-    var textArray = text.split("\n");
-    var count = 0;
-    var count1 = 0;
-    var p = [];
-    for(let i = 0; i < textArray.length; i++){
-        p.push(textArray[i]);
-    }
-    for(let i = 0; i < textArray.length; i++){
-        var t = textArray[i].trim();
-        var u = textArray[i].search(/\S/);
-        const elements = t.split(WHITESPACE_RE);
-        elements.shift();
-        if(ATTR.test(t)){
-            if(elements[0] == "vec2" && elements[1] == "a_texcoord0;"){
-                for(let iii = 0; iii < nobt; iii++){
-                    if(nobt ==1 ) break;
-                    else{
-                        count++;
-                        let apps = "";
-                        for(let ii = 0; ii < u; ii++){
-                            apps += " ";
-                        }
-                        if(iii == 0) continue;
-                        let c = "attribute vec2 a_texcoord" + iii + ";";
-                        apps += c;
-                        p.splice(i + iii, 0, apps);
-                    }
-                }
-            }
-        }
-        if(VARYING.test(t)){
-            if(elements[0] == "vec2" && elements[1] == "vTextureCoord0;"){
-                for(let iii = 0; iii < nobt; iii++){
-                    if(nobt == 1) break;
-                    else{
-                        count1++;
-                        let apps = "";
-                        for(let ii = 0; ii < u; ii++){
-                            apps += " ";
-                        }
-                        if(iii == 0) continue;
-                        let c = "varying vec2 vTextureCoord" + iii + ";";
-                        apps += c;
-                        p.splice(i + iii + count - 1, 0, apps);
-                    }
-                }
-            }
-        }
-        if(VTEX0.test(t)){
-            for(let iii = 0; iii < nobt; iii++){
-                if(nobt == 1) break;
-                else{
-                    let apps = "";
-                    for(let ii = 0; ii < u; ii++){
-                        apps += " ";
-                    }
-                    if(iii == 0) continue;
-                    let c = "vTextureCoord" + iii + " = " + "a_texcoord" + iii + ";";
-                    apps += c;
-                    p.splice(i + iii + count + count1 -2, 0, apps);
-                }
-            }
-        }
-    }
-    var q = "";
-    for(let i = 0; i < p.length; i++){
-        if(i < p.length -1 ){
-            q += p[i] + '\n';
-        }else{
-            q += p[i];
-        }
-    }
-    shader.text = q;
-}
-
-var openFile = function(event) {
-    var input = event.target;
-
-    var reader = new FileReader();
-    var models = {};
-    reader.onload = function(){
-        if(count == 0){
-            text_obj = reader.result;
-        }else if(count == 1){
-            text_mtl = reader.result;
-
-        }
-        if(count == 1){
-            // let textures = getTexturesCoord([
-            //     {
-            //         name : 'die',
-            //         obj : text_obj,
-            //         mtl : text_mtl,
-            //     }
-            // ]);
-            // let t = groupTextures(textures);
-            let models = [];
-            for(let i = 0; i < data.length; i++){
-                let model = {...data[i]};
-                models.push(model);
-            }
-            webGLStart(models);
-        }
-        count ++;
-        
-    };
-    reader.readAsText(input.files[0]);
+window.onload = function (){
+    // OBJ.downloadMeshes({
+    //     'suzanne': '/development/models/suzanne.obj'
+    // }, webGLStart);
+    console.log(data);
+    webGLStart(data);
 };
 
-var test = null;
+// var openFile = function(event) {
+//     var input = event.target;
 
-function loadModels(model){
-    test = model[0].obj;
-  const finished = [];
-  const parsed = [];
-  options.enableWTextureCoord = true;
-  let name = model[0].name;
-  parsed.push(Promise.resolve(name));
+//     var reader = new FileReader();
+//     var models = {};
+//     reader.onload = function(){
+//         if(count == 0){
+//             text_obj = reader.result;
+//         }else if(count == 1){
+//             text_mtl = reader.result;
 
-  parsed.push(new OBJ.Mesh(model[0].obj,options));
+//         }
+//         if(count == 1){
+//             // let textures = getTexturesCoord([
+//             //     {
+//             //         name : 'die',
+//             //         obj : text_obj,
+//             //         mtl : text_mtl,
+//             //     }
+//             // ]);
+//             // let t = groupTextures(textures);
+//             let models = [];
+//             console.log(data);
+//             for(let i = 0; i < data.length; i++){
+//                 let model = {...data[i]};
+//                 models.push(model);
+//             }
+//             webGLStart(models);
+//         }
+//         count ++;
+        
+//     };
+//     reader.readAsText(input.files[0]);
+// };
 
-  let material = new OBJ.MaterialLibrary(model[0].mtl);
-
-  parsed.push(Promise.resolve(material));
-
-  finished.push(Promise.all(parsed));  
-
-  return Promise.all(finished)
-  .then((ms) => {
-      const models = {};
-
-      for (const model of ms) {
-        const [name, mesh, mtl] = model;
-        mesh.name = name;
-        if (mtl) {
-          mesh.addMaterialLibrary(mtl);
-        }
-        models[name] = mesh;
-      }
-
-      return models;
-
-  });
-}
