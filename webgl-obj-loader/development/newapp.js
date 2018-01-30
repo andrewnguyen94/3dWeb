@@ -286,7 +286,7 @@ function initBuffers(mesh){
     index_buffer = gl.createBuffer();
     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, index_buffer);
     gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(indices), gl.STATIC_DRAW);
-    num_index = indices.length;
+    index_buffer.numItems = indices.length;
     // num_indices.push(num_index);
     //end
 }
@@ -330,10 +330,10 @@ function drawObject(){
     gl.uniformMatrix4fv(shaderProgram.mvMatrixUniform, false, app.mvMatrix);
     // gl.uniform3fv(shaderProgram.reverseLightDirectionLocation, normalize([0,0,-5]));
  
-    var normalMatrix = mat4.create();
+    var normalMatrix = mat3.create();
     mat3.normalFromMat4(normalMatrix, app.mvMatrix);
     // gl.uniformMatrix3fv(shaderProgram.nMatrixUniform, false, normalMatrix);
-    gl.uniformMatrix4fv(shaderProgram.nMatrixUniform, false, normalMatrix);
+    gl.uniformMatrix3fv(shaderProgram.nMatrixUniform, false, normalMatrix);
     gl.uniform1i(shaderProgram.type, type);
     //active textures
     gl.activeTexture(gl.TEXTURE0);
@@ -345,7 +345,9 @@ function drawObject(){
     gl.uniform1i(shaderProgram.tex_diffuse, 1);
     //end
 
-    gl.drawElements(gl.TRIANGLES, num_index, gl.UNSIGNED_BYTE, 0);     
+    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, index_buffer);
+
+    gl.drawElements(gl.TRIANGLES, index_buffer.numItems, gl.UNSIGNED_BYTE, 0); 
 }
 
 var m4 = {

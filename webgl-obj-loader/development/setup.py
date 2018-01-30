@@ -391,9 +391,23 @@ def main():
 							continue
 						else:
 							m = l[i].split('/')
-							faces_pos.append(m[0])
-							faces_nors.append(m[2])
-							faces_uvs.append(m[1])
+							if faces_pos == None:
+								faces_pos.append(m[0])
+							else:
+								if m[0] not in faces_pos:
+									faces_pos.append(m[0])
+
+							if faces_nors == None:
+								faces_nors.append(m[0])
+							else:
+								if m[2] not in faces_nors:
+									faces_nors.append(m[2])
+
+							if faces_uvs == None:
+								faces_uvs.append(m[1])
+							else:
+								if m[1] not in faces_uvs:
+									faces_uvs.append(m[1])
 							idtmp = mesh.get_indices()
 							hashname = l[i] + "," + mesh.get_name()
 							hashObjects = mesh.get_hashobjs()
@@ -430,8 +444,6 @@ def main():
 						tmp_uvs = mesh.get_uvs_buff()
 					else:
 						tmp_uvs = []
-
-					print len(faces_pos)
 					for i in range(len(faces_pos)):
 						tmp_verts.append(pos_arr[int(faces_pos[i]) * 3 - 3])
 						tmp_verts.append(pos_arr[int(faces_pos[i]) * 3 - 2])
