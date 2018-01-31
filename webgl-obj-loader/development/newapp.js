@@ -22,17 +22,17 @@ app.camera = mat4.create();
 // var uvsArr = [];
 // var indexBufferArr = [];
 
-var posBuffer = null;
-var tangBuffer = null;
-var bitTangBuffer = null;
-var uvs = null;
-var index_buffer = null;
-var num_index = 0;
+var posBuffer;
+var tangBuffer;
+var bitTangBuffer;
+var uvs;
+var index_buffer;
+var num_index;
 
 // var textDiffuseArr = [];
 // var textNormArr = [];
-var text_diffuse = null;
-var text_norm = null;
+var text_diffuse;
+var text_norm;
 
 // num_indices = [];
 
@@ -254,6 +254,7 @@ function initBuffers(mesh){
     gl.bindBuffer(gl.ARRAY_BUFFER, posBuffer);
     var posData = mesh.verts;
     gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(posData), gl.STATIC_DRAW);
+    posBuffer.numItems = posData/3;
     // posBufferArr.push(posBuffer);
     //end position
 
@@ -314,18 +315,6 @@ function drawObject(){
      Assumes that the setMatrixUniforms function exists
      as well as the shaderProgram has a uniform attribute called "samplerUniform"
      */
-    gl.bindBuffer(gl.ARRAY_BUFFER, posBuffer);
-    gl.vertexAttribPointer(shaderProgram.attr_pos, 3, gl.FLOAT, false, 0, 0);
-
-    gl.bindBuffer(gl.ARRAY_BUFFER, tangBuffer);
-    gl.vertexAttribPointer(shaderProgram.attr_tang, 3, gl.FLOAT, false, 0, 0);
-
-    gl.bindBuffer(gl.ARRAY_BUFFER, bitTangBuffer);
-    gl.vertexAttribPointer(shaderProgram.attr_bitang, 3, gl.FLOAT, false, 0, 0);
-
-    gl.bindBuffer(gl.ARRAY_BUFFER, uvs);
-    gl.vertexAttribPointer(shaderProgram.attr_uv, 2, gl.FLOAT, false, 0, 0);
-
     gl.uniformMatrix4fv(shaderProgram.pMatrixUniform, false, app.pMatrix);
     gl.uniformMatrix4fv(shaderProgram.mvMatrixUniform, false, app.mvMatrix);
     // gl.uniform3fv(shaderProgram.reverseLightDirectionLocation, normalize([0,0,-5]));
@@ -345,9 +334,20 @@ function drawObject(){
     gl.uniform1i(shaderProgram.tex_diffuse, 1);
     //end
 
+    gl.bindBuffer(gl.ARRAY_BUFFER, posBuffer);
+    gl.vertexAttribPointer(shaderProgram.attr_pos, 3, gl.FLOAT, false, 0, 0);
+
+    gl.bindBuffer(gl.ARRAY_BUFFER, tangBuffer);
+    gl.vertexAttribPointer(shaderProgram.attr_tang, 3, gl.FLOAT, false, 0, 0);
+
+    gl.bindBuffer(gl.ARRAY_BUFFER, bitTangBuffer);
+    gl.vertexAttribPointer(shaderProgram.attr_bitang, 3, gl.FLOAT, false, 0, 0);
+
+    gl.bindBuffer(gl.ARRAY_BUFFER, uvs);
+    gl.vertexAttribPointer(shaderProgram.attr_uv, 2, gl.FLOAT, false, 0, 0);
     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, index_buffer);
 
-    gl.drawElements(gl.TRIANGLES, index_buffer.numItems, gl.UNSIGNED_BYTE, 0); 
+    gl.drawElements(gl.TRIANGLES, index_buffer.numItems, gl.UNSIGNED_SHORT, 0); 
 }
 
 var m4 = {
@@ -731,7 +731,6 @@ function tick(){
 }
 
 function drawScene(){
-    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
     mat4.identity(app.camera);
     if(tmp_cam != null){
         app.camera = {...tmp_cam};
@@ -754,6 +753,7 @@ function drawScene(){
             initShaders(mesh);
             initBuffers(mesh);
             initTextures(mesh);
+            gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
             drawObject();
         }
     }
