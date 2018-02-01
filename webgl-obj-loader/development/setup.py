@@ -102,6 +102,18 @@ class Mesh(object):
 		self.indices = []
 		self.hashobjs = []
 		self.currentIndex = 0;
+		self.pos_buff_tangent = [];
+		self.uv_buff_tangent = [];
+
+	def set_pos_buff_tangent(self, pos_buff_tangent):
+		self.pos_buff_tangent = pos_buff_tangent
+	def get_pos_buff_tangent(self):
+		return self.pos_buff_tangent
+
+	def set_uv_buff_tangent(self, uv_buff_tangent):
+		self.uv_buff_tangent = uv_buff_tangent
+	def get_uv_buff_tangent(self):
+		return self.uv_buff_tangent
 
 	def set_currentIndex(self, id):
 		self.currentIndex = id
@@ -355,6 +367,8 @@ def main():
 		faces_pos = []
 		faces_nors = []
 		faces_uvs = []
+		face_pos_tang = []
+		face_uv_tang = []
 		for i in range(len(lines)):
 			l = lines[i].split()
 			if l:
@@ -391,6 +405,8 @@ def main():
 							continue
 						else:
 							m = l[i].split('/')
+							face_pos_tang.append(m[0])
+							face_uv_tang.append(m[1])
 							if faces_pos == None:
 								faces_pos.append(m[0])
 							else:
@@ -444,6 +460,8 @@ def main():
 						tmp_uvs = mesh.get_uvs_buff()
 					else:
 						tmp_uvs = []
+					tmp_pos_tang = mesh.get_pos_buff_tangent()
+					tmp_uv_tang = mesh.get_uv_buff_tangent()
 					for i in range(len(faces_pos)):
 						tmp_verts.append(pos_arr[int(faces_pos[i]) * 3 - 3])
 						tmp_verts.append(pos_arr[int(faces_pos[i]) * 3 - 2])
@@ -459,16 +477,27 @@ def main():
 						tmp_uvs.append(uv_arr[int(faces_uvs[i]) * 2 - 2])
 						tmp_uvs.append(uv_arr[int(faces_uvs[i]) * 2 - 1])
 					mesh.set_uvs_buff(tmp_uvs)
+					for i in range(len(face_pos_tang)):
+						tmp_pos_tang.append(pos_arr[int(face_pos_tang[i]) * 3 - 3])
+						tmp_pos_tang.append(pos_arr[int(face_pos_tang[i]) * 3 - 2])
+						tmp_pos_tang.append(pos_arr[int(face_pos_tang[i]) * 3 - 1])
+					mesh.set_pos_buff_tangent(tmp_pos_tang)
+					for i in range(len(face_uv_tang)):
+						tmp_uv_tang.append(uv_arr[int(face_uv_tang[i]) * 2 - 2])
+						tmp_uv_tang.append(uv_arr[int(face_uv_tang[i]) * 2 - 1])
+					mesh.set_uv_buff_tangent(tmp_uv_tang)
 					mesh.set_currentIndex(index);
 					faces_pos = []
 					faces_nors = []
 					faces_uvs = []
+					face_pos_tang = []
+					face_uv_tang = []
 
 	for i in range(len(MeshArray)):
 		mesh = MeshArray[i]
-		pos_buff = mesh.get_verts_buff()
-		uv_buff = mesh.get_uvs_buff()
-
+		pos_buff = mesh.get_pos_buff_tangent()
+		uv_buff = mesh.get_uv_buff_tangent()
+		print len(pos_buff)
 		if mesh.get_verts():
 			for j in new_range(0, mesh.get_verts() - 1, 3):
 				if mesh.get_tangents():
@@ -538,7 +567,7 @@ def main():
 		}
 		datas.append(data)
 
-	with open('C:\\Users\\andrew_nguyen\\Downloads\\aaa\\data.json', 'w') as outfile:
+	with open('/Volumes/Elements/aaa/data.json', 'w') as outfile:
 		try :
 			data = ""
 			if MeshArray:
