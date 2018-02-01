@@ -28,11 +28,15 @@ var bitTangBuffer;
 var uvs;
 var index_buffer;
 var num_index;
+var ambient_buffer;
+var diffuse_buffer;
+var spec_buffer;
 
 // var textDiffuseArr = [];
 // var textNormArr = [];
 var text_diffuse;
 var text_norm;
+var diff_img, norm_img;
 
 // num_indices = [];
 
@@ -165,19 +169,36 @@ function getUrl(url){
     return "http://123.cnviet.net/wp-content/uploads/2018/01/" + url;
 }
 
+function load_bump(){
+    var tex = gl.createTexture();
+    gl.bindTexture(gl.TEXTURE_2D, tex);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 1, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE,
+          new Uint8Array([0, 0, 255, 255]));
+    var img = new Image();
+    // img.onload = function(){
+    gl.bindTexture(gl.TEXTURE_2D, tex);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, img);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+    // }
+    // img.src = url;
+    return tex;
+}
+
 function load_textures(url){
     var tex = gl.createTexture();
     gl.bindTexture(gl.TEXTURE_2D, tex);
     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 1, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE,
           new Uint8Array([0, 0, 255, 255]));
     var img = new Image();
-    img.onload = function(){
-        gl.bindTexture(gl.TEXTURE_2D, tex);
-        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, img);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-    }
-    img.src = url;
+    img.src = diff_img;
+    // img.src = diff_img;
+    // img.onload = function(){
+    gl.bindTexture(gl.TEXTURE_2D, tex);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, img);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+    // }
     return tex;
 }
 
@@ -245,6 +266,12 @@ function initShaders(mesh){
     gl.enableVertexAttribArray(shaderProgram.attr_bitang);
     shaderProgram.attr_uv = gl.getAttribLocation(shaderProgram, "vert_uv");
     gl.enableVertexAttribArray(shaderProgram.attr_uv);
+    shaderProgram.attr_amb = gl.getAttribLocation(shaderProgram, "ambient");
+    gl.enableVertexAttribArray(shaderProgram.attr_amb);
+    shaderProgram.attr_diff = gl.getAttribLocation(shaderProgram, "diffuse");
+    gl.enableVertexAttribArray(shaderProgram.attr_diff);
+    shaderProgram.attr_spec = gl.getAttribLocation(shaderProgram, "specular");
+    gl.enableVertexAttribArray(shaderProgram.attr_spec);
 
 }
 
@@ -282,6 +309,27 @@ function initBuffers(mesh){
     // uvsArr.push(uvs);
     //end uvs
 
+    //ambient
+    ambient_buffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, ambient_buffer);
+    var amb = mesh.ambient;
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(amb), gl.STATIC_DRAW);
+    //end
+
+    //diffuse
+    diffuse_buffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, diffuse_buffer);
+    var diff = mesh.diffuse;
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(diff), gl.STATIC_DRAW);
+    //end
+
+    //specular
+    spec_buffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, spec_buffer);
+    var spec = mesh.specular;
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(spec), gl.STATIC_DRAW);
+    //end
+
     //index buffer
     var indices = mesh.indices;
     index_buffer = gl.createBuffer();
@@ -302,10 +350,9 @@ function initTextures(mesh){
     }else{
         type = 0;
     }
-
     text_diffuse = load_textures(tex_src);
+    text_norm = load_bump();
     // textDiffuseArr.push(text_diffuse);
-    text_norm = load_textures(bump_src);
     // textNormArr.push(text_norm); 
 }
 
@@ -345,6 +392,16 @@ function drawObject(){
 
     gl.bindBuffer(gl.ARRAY_BUFFER, uvs);
     gl.vertexAttribPointer(shaderProgram.attr_uv, 2, gl.FLOAT, false, 0, 0);
+
+    gl.bindBuffer(gl.ARRAY_BUFFER, ambient_buffer);
+    gl.vertexAttribPointer(shaderProgram.attr_amb, 3, gl.FLOAT, false, 0, 0);
+
+    gl.bindBuffer(gl.ARRAY_BUFFER, diffuse_buffer);
+    gl.vertexAttribPointer(shaderProgram.attr_diff, 3, gl.FLOAT, false, 0, 0);
+
+    gl.bindBuffer(gl.ARRAY_BUFFER, spec_buffer);
+    gl.vertexAttribPointer(shaderProgram.attr_spec, 3, gl.FLOAT, false, 0, 0);
+
     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, index_buffer);
 
     gl.drawElements(gl.TRIANGLES, index_buffer.numItems, gl.UNSIGNED_SHORT, 0); 
@@ -713,15 +770,6 @@ function webGLStart(meshes){
     // canvas.addEventListener("scroll", handleOnWheel);
     canvas.addEventListener('wheel', handleOnWheel);
     tick();
-    // for(var i = 0; i < app.meshes.length; i++){
-    //     var mesh = app.meshes[i];
-    //     if(mesh.indices.length){
-    //         initShaders(mesh);
-    //         initBuffers(mesh);
-    //         initTextures(mesh);
-    //         tick(mesh);
-    //     }
-    // }
 }
 
 function tick(){
@@ -761,46 +809,33 @@ function drawScene(){
     // mvPopMatrix();
 }
 
-window.onload = function (){
-    // OBJ.downloadMeshes({
-    //     'suzanne': '/development/models/suzanne.obj'
-    // }, webGLStart);
-    console.log(data);
-    webGLStart(data);
-};
-
-// var openFile = function(event) {
-//     var input = event.target;
-
-//     var reader = new FileReader();
-//     var models = {};
-//     reader.onload = function(){
-//         if(count == 0){
-//             text_obj = reader.result;
-//         }else if(count == 1){
-//             text_mtl = reader.result;
-
-//         }
-//         if(count == 1){
-//             // let textures = getTexturesCoord([
-//             //     {
-//             //         name : 'die',
-//             //         obj : text_obj,
-//             //         mtl : text_mtl,
-//             //     }
-//             // ]);
-//             // let t = groupTextures(textures);
-//             let models = [];
-//             console.log(data);
-//             for(let i = 0; i < data.length; i++){
-//                 let model = {...data[i]};
-//                 models.push(model);
-//             }
-//             webGLStart(models);
-//         }
-//         count ++;
-        
-//     };
-//     reader.readAsText(input.files[0]);
+// window.onload = function (){
+//     // OBJ.downloadMeshes({
+//     //     'suzanne': '/development/models/suzanne.obj'
+//     // }, webGLStart);
+//     webGLStart(data);
 // };
+
+var openFile = function(event) {
+    var input = event.target;
+    var selectedFile = event.target.files[0];
+
+    var reader = new FileReader();
+    var models = {};
+    reader.onload = function(){
+        if(count == 0){
+            diff_img = reader.result;
+        }else if(count == 1){
+            norm_img = reader.result;
+        }
+        if(!data.isBump){
+            if(count == 0){
+                webGLStart(data);
+            }
+        }
+        count ++;
+        
+    };
+    reader.readAsDataURL(selectedFile);
+};
 

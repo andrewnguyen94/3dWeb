@@ -101,9 +101,39 @@ class Mesh(object):
 		self.verts = 0
 		self.indices = []
 		self.hashobjs = []
-		self.currentIndex = 0;
-		self.pos_buff_tangent = [];
-		self.uv_buff_tangent = [];
+		self.currentIndex = 0
+		self.pos_buff_tangent = []
+		self.uv_buff_tangent = []
+		self.indicesToRemove = []
+		self.all_curr_index = 0
+		self.ambients = []
+		self.diffuses = []
+		self.speculars = []
+
+	def set_speculars(self, speculars):
+		self.speculars = speculars
+	def get_speculars(self):
+		return self.speculars
+
+	def set_diffuses(self, diffuses):
+		self.diffuses = diffuses
+	def get_diffuses(self):
+		return self.diffuses
+
+	def set_ambients(self, ambients):
+		self.ambients = ambients
+	def get_ambients(self):
+		return self.ambients
+
+	def set_all_curr_index(self, all_curr_index):
+		self.all_curr_index = all_curr_index
+	def get_all_cur_index(self):
+		return self.all_curr_index
+
+	def set_indicesToRemove(self, indicesToRemove):
+		self.indicesToRemove = indicesToRemove
+	def get_indicesToRemove(self):
+		return self.indicesToRemove
 
 	def set_pos_buff_tangent(self, pos_buff_tangent):
 		self.pos_buff_tangent = pos_buff_tangent
@@ -369,6 +399,9 @@ def main():
 		faces_uvs = []
 		face_pos_tang = []
 		face_uv_tang = []
+		indexToRemove = 0
+		indicesToRemove = []
+		all_curr_index = 0
 		for i in range(len(lines)):
 			l = lines[i].split()
 			if l:
@@ -376,6 +409,8 @@ def main():
 					name = getName(l)
 					mesh = getMeshFromName(name, MeshArray)
 					index = mesh.get_currentIndex()
+					indicesToRemove = mesh.get_indicesToRemove()
+					all_curr_index = mesh.get_all_cur_index()
 				if l[0] == 'v':
 					vs = getVertices(l)
 					for i in range(len(vs)):
@@ -404,6 +439,8 @@ def main():
 						if i == 0:
 							continue
 						else:
+							all_curr_index = all_curr_index + 1
+							mesh.set_all_curr_index(all_curr_index)
 							m = l[i].split('/')
 							face_pos_tang.append(m[0])
 							face_uv_tang.append(m[1])
@@ -412,7 +449,10 @@ def main():
 							else:
 								if m[0] not in faces_pos:
 									faces_pos.append(m[0])
-
+								else:
+									indexToRemove = all_curr_index
+									indicesToRemove.append(indexToRemove)
+									mesh.set_indicesToRemove(indicesToRemove)
 							if faces_nors == None:
 								faces_nors.append(m[0])
 							else:
@@ -497,9 +537,14 @@ def main():
 		mesh = MeshArray[i]
 		pos_buff = mesh.get_pos_buff_tangent()
 		uv_buff = mesh.get_uv_buff_tangent()
-		print len(pos_buff)
+		ambients = mesh.get_ambients()
+		ambient = mesh.get_ambient()
+		diffuses = mesh.get_diffuses()
+		diffuse = mesh.get_diffuse()
+		speculars = mesh.get_speculars()
+		specular = mesh.get_specular()
 		if mesh.get_verts():
-			for j in new_range(0, mesh.get_verts() - 1, 3):
+			for j in new_range(0, len(pos_buff) / 3 - 1, 3):
 				if mesh.get_tangents():
 					ts = mesh.get_tangents()
 				else:
@@ -537,15 +582,62 @@ def main():
 					ts.append(tangent.get_x())
 					ts.append(tangent.get_y())
 					ts.append(tangent.get_z())
-
-				#set bit tangent
-				for jj in range(3):
+					#set bit tangent
 					bts.append(bit_tangent.get_x())
 					bts.append(bit_tangent.get_y())
 					bts.append(bit_tangent.get_z())
+					#set ambient
+					ambients.append(ambient[0])
+					ambients.append(ambient[1])
+					ambients.append(ambient[2])
+					#set diffuse
+					diffuses.append(diffuse[0])
+					diffuses.append(diffuse[1])
+					diffuses.append(diffuse[2])
+					#set specular
+					speculars.append(specular[0])
+					speculars.append(specular[1])
+					speculars.append(specular[2])
 
 				mesh.set_tangents(ts)
 				mesh.set_bit_tangents(bts)
+				mesh.set_ambients(ambients)
+				mesh.set_diffuses(diffuses)
+				mesh.set_speculars(speculars)
+
+	for i in range(len(MeshArray)):
+		mesh = MeshArray[i]
+		if mesh.get_verts() and mesh.get_indicesToRemove():
+			print len(mesh.get_indicesToRemove()), len(mesh.get_tangents())
+			count = 0
+			for j in range(len(mesh.get_indicesToRemove())):
+				tangents = mesh.get_tangents()
+				bit_tangent = mesh.get_bit_tangents()
+				ambients = mesh.get_ambients()
+				diffuses = mesh.get_diffuses()
+				speculars = mesh.get_speculars()
+
+				tangents.remove(tangents[(mesh.get_indicesToRemove()[j] - 1) * 3 - count])
+				bit_tangent.remove(bit_tangent[(mesh.get_indicesToRemove()[j] - 1) * 3 - count])
+				speculars.remove(speculars[(mesh.get_indicesToRemove()[j] - 1) * 3 - count])
+				ambients.remove(ambients[(mesh.get_indicesToRemove()[j] - 1) * 3 - count])
+				diffuses.remove(diffuses[(mesh.get_indicesToRemove()[j] - 1) * 3 - count])
+
+				count = count + 3
+				tangents.remove(tangents[(mesh.get_indicesToRemove()[j] - 1) * 3 + 1 - count])
+				bit_tangent.remove(bit_tangent[(mesh.get_indicesToRemove()[j] - 1) * 3 + 1 - count])
+				speculars.remove(speculars[(mesh.get_indicesToRemove()[j] - 1) * 3 + 1 - count])
+				ambients.remove(ambients[(mesh.get_indicesToRemove()[j] - 1) * 3 + 1 - count])
+				diffuses.remove(diffuses[(mesh.get_indicesToRemove()[j] - 1) * 3 + 1 - count])
+
+				count = count + 3
+				tangents.remove(tangents[(mesh.get_indicesToRemove()[j] - 1) * 3 + 2 - count])
+				bit_tangent.remove(bit_tangent[(mesh.get_indicesToRemove()[j] - 1) * 3 + 2 - count])
+				speculars.remove(speculars[(mesh.get_indicesToRemove()[j] - 1) * 3 + 2 - count])
+				ambients.remove(ambients[(mesh.get_indicesToRemove()[j] - 1) * 3 + 2 - count])
+				diffuses.remove(diffuses[(mesh.get_indicesToRemove()[j] - 1) * 3 + 2 - count])
+
+
 
 	datas = []
 	for i in range(len(MeshArray)):
@@ -554,9 +646,9 @@ def main():
 			'verts' : MeshArray[i].get_verts_buff(),
 			'normals' : MeshArray[i].get_norms_buff(),
 			'uvs' : MeshArray[i].get_uvs_buff(),
-			'diffuse' : MeshArray[i].get_diffuse(),
-			'ambient' : MeshArray[i].get_ambient(),
-			'specular' : MeshArray[i].get_specular(),
+			'diffuse' : MeshArray[i].get_diffuses(),
+			'ambient' : MeshArray[i].get_ambients(),
+			'specular' : MeshArray[i].get_speculars(),
 			'alpha' : MeshArray[i].get_alpha(),
 			'isBump' : MeshArray[i].get_is_bump(),
 			'textures' : MeshArray[i].get_text_diff(),
@@ -567,7 +659,7 @@ def main():
 		}
 		datas.append(data)
 
-	with open('/Volumes/Elements/aaa/data.json', 'w') as outfile:
+	with open('C:/Users/andrew_nguyen/Downloads/aaa/data.json', 'w') as outfile:
 		try :
 			data = ""
 			if MeshArray:
