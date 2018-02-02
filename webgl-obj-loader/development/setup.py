@@ -407,6 +407,7 @@ def main():
 			if l:
 				if l[0] == 'usemtl':
 					name = getName(l)
+					print name
 					mesh = getMeshFromName(name, MeshArray)
 					index = mesh.get_currentIndex()
 					indicesToRemove = mesh.get_indicesToRemove()
@@ -532,6 +533,51 @@ def main():
 					faces_uvs = []
 					face_pos_tang = []
 					face_uv_tang = []
+		else:
+			if mesh.get_verts_buff():
+				tmp_verts = mesh.get_verts_buff()
+			else: 
+				tmp_verts = []
+			if mesh.get_norms_buff():
+				tmp_norms = mesh.get_norms_buff()
+			else:
+				tmp_norms = []
+			if mesh.get_uvs_buff():
+				tmp_uvs = mesh.get_uvs_buff()
+			else:
+				tmp_uvs = []
+			tmp_pos_tang = mesh.get_pos_buff_tangent()
+			tmp_uv_tang = mesh.get_uv_buff_tangent()
+			for i in range(len(faces_pos)):
+				tmp_verts.append(pos_arr[int(faces_pos[i]) * 3 - 3])
+				tmp_verts.append(pos_arr[int(faces_pos[i]) * 3 - 2])
+				tmp_verts.append(pos_arr[int(faces_pos[i]) * 3 - 1])
+			mesh.set_verts_buff(tmp_verts)
+			mesh.set_verts(len(tmp_verts) / 3)
+			for i in range(len(faces_nors)):
+				tmp_norms.append(nor_arr[int(faces_nors[i]) * 3 - 3])
+				tmp_norms.append(nor_arr[int(faces_nors[i]) * 3 - 2])
+				tmp_norms.append(nor_arr[int(faces_nors[i]) * 3 - 1])
+			mesh.set_norms_buff(tmp_norms)
+			for i in range(len(faces_uvs)):
+				tmp_uvs.append(uv_arr[int(faces_uvs[i]) * 2 - 2])
+				tmp_uvs.append(uv_arr[int(faces_uvs[i]) * 2 - 1])
+			mesh.set_uvs_buff(tmp_uvs)
+			for i in range(len(face_pos_tang)):
+				tmp_pos_tang.append(pos_arr[int(face_pos_tang[i]) * 3 - 3])
+				tmp_pos_tang.append(pos_arr[int(face_pos_tang[i]) * 3 - 2])
+				tmp_pos_tang.append(pos_arr[int(face_pos_tang[i]) * 3 - 1])
+			mesh.set_pos_buff_tangent(tmp_pos_tang)
+			for i in range(len(face_uv_tang)):
+				tmp_uv_tang.append(uv_arr[int(face_uv_tang[i]) * 2 - 2])
+				tmp_uv_tang.append(uv_arr[int(face_uv_tang[i]) * 2 - 1])
+			mesh.set_uv_buff_tangent(tmp_uv_tang)
+			mesh.set_currentIndex(index);
+			faces_pos = []
+			faces_nors = []
+			faces_uvs = []
+			face_pos_tang = []
+			face_uv_tang = []
 
 	for i in range(len(MeshArray)):
 		mesh = MeshArray[i]
@@ -659,7 +705,7 @@ def main():
 		}
 		datas.append(data)
 
-	with open('C:/Users/andrew_nguyen/Downloads/aaa/data.json', 'w') as outfile:
+	with open('D:/3dWeb/webgl-obj-loader/development/hohohoho/data.json', 'w') as outfile:
 		try :
 			data = ""
 			if MeshArray:
