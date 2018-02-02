@@ -83,6 +83,7 @@
             4 = Parallax occlusion mapping
         */
         uniform int type;
+        uniform int is_diffuse;
         // uniform float depth_scale;
         // uniform float num_layers;
         varying vec3 v_ambient;
@@ -139,8 +140,10 @@
 
             // Only perturb the texture coordinates if a parallax technique is selected
             vec2 uv = frag_uv;
-
-            vec3 albedo = texture2D(tex_diffuse, uv).rgb;
+            vec3 albedo = vec3(0,0,0);
+            if(is_diffuse != 0){
+                albedo = texture2D(tex_diffuse, uv).rgb;
+            }
             vec4 ambient = vec4(v_ambient, 1.0);
             if (type == 0) {
                 // No bump mapping
@@ -161,7 +164,7 @@
     <script type="text/javascript" src="gl-matrix.js"></script>
     <script type='text/javascript' src='../dist/webgl-obj-loader.js'></script>
     <!-- <script src="C:/Users/andrew_nguyen/Downloads/aaa/data.json"></script> -->
-    <script src="C:/Users/andrew_nguyen/Downloads/aaa/data.json"></script>
+    <script src="D:/3dWeb/webgl-obj-loader/development/hohohoho/data.json"></script>
     <!-- <script type='text/javascript' src='../dist/webgl-obj-loader.min.js'></script> -->
     <script type='text/javascript' src='newapp.js'></script>
 </head>
