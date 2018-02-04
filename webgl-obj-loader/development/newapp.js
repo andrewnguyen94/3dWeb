@@ -370,7 +370,7 @@ function initBuffers(mesh, index){
     //end
 }
 
-function initTextures(mesh, index){
+function initTextures(mesh){
     for(let i = 0; i < data.length; i++){
         var mesh = data[i];
         var tex_src = mesh.textures;
@@ -418,21 +418,21 @@ function drawObject(index){
     gl.uniform1i(shaderProgram.type, type);
     gl.uniform1i(shaderProgram.is_diffuse, is_diffuse);
     //active textures
-    if(text_norm != undefined && text_diffuse != undefined){
+    if(text_norm[index] != undefined && text_diffuse[index] != undefined){
         gl.activeTexture(gl.TEXTURE0);
-        gl.bindTexture(gl.TEXTURE_2D, text_norm);
+        gl.bindTexture(gl.TEXTURE_2D, text_norm[index]);
         gl.uniform1i(shaderProgram.text_norm, 0);
 
         gl.activeTexture(gl.TEXTURE1);
-        gl.bindTexture(gl.TEXTURE_2D, text_diffuse);
+        gl.bindTexture(gl.TEXTURE_2D, text_diffuse[index]);
         gl.uniform1i(shaderProgram.tex_diffuse, 1);
-    }else if(text_norm == undefined && text_diffuse != undefined){
+    }else if(text_norm[index] == undefined && text_diffuse[index] != undefined){
         gl.activeTexture(gl.TEXTURE1);
-        gl.bindTexture(gl.TEXTURE_2D, text_diffuse);
+        gl.bindTexture(gl.TEXTURE_2D, text_diffuse[index]);
         gl.uniform1i(shaderProgram.text_diffuse, 1);
-    }else if(text_norm != undefined && text_diffuse == undefined){
+    }else if(text_norm[index] != undefined && text_diffuse[index] == undefined){
         gl.activeTexture(gl.TEXTURE0);
-        gl.bindTexture(gl.TEXTURE_2D, text_norm);
+        gl.bindTexture(gl.TEXTURE_2D, text_norm[index]);
         gl.uniform1i(shaderProgram.text_norm, 0);
     }
     //end
@@ -836,6 +836,7 @@ function webGLStart(meshes){
     }, false);
     initShaders();
     setupBuffer();
+    initTextures();
     tick();
 }
 
@@ -870,7 +871,6 @@ function drawScene(){
         var mesh = app.meshes[i];
         if(mesh.indices.length){
             initBuffers(mesh,i);
-            initTextures(mesh,i);
             gl.useProgram(shaderProgram);
             drawObject(i);
         }
