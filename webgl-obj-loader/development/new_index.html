@@ -143,13 +143,15 @@
             vec3 albedo = vec3(0,0,0);
             if(is_diffuse != 0){
                 albedo = texture2D(tex_diffuse, uv).rgb;
+            }else{
+                albedo = v_diffuse;
             }
-            vec4 ambient = vec4(v_ambient, 1.0);
+            // vec4 ambient = vec4(v_ambient, 1.0);
             if (type == 0) {
                 // No bump mapping
                 vec3 norm = vec3(0,0,1);
                 // float diffuse = max(dot(light_dir, norm), 0.0);
-                gl_FragColor = vec4(v_diffuse * albedo + v_ambient, 1.0);
+                gl_FragColor = vec4(albedo + v_ambient, 1.0);
 
             } else {
                 // Normal mapping
