@@ -23,6 +23,7 @@ app.camera = mat4.create();
 // var indexBufferArr = [];
 
 var posBuffer ;
+var data;
 var tangBuffer ;
 var bitTangBuffer;
 var uvs;
@@ -167,7 +168,7 @@ function isPowerOf2(value) {
 }
 
 function getUrl(url){
-    return "http://123.cnviet.net/wp-content/uploads/2018/01/" + url;
+    return "http://vietek.com.vn/wp-content/uploads/2018/02/" + url;
 }
 
 function load_bump(){
@@ -193,20 +194,20 @@ function load_textures(url){
         gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 1, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE,
               new Uint8Array([0, 0, 255, 255]));
         var img = new Image();
+        img.onload = function(){
+            gl.bindTexture(gl.TEXTURE_2D, tex);
+            gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, img);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+        }
         img.src = url;
-        // img.src = diff_img;
-        // img.onload = function(){
-        gl.bindTexture(gl.TEXTURE_2D, tex);
-        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, img);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-        // }
         return tex;
     }
 }
 
 function getShader(gl, id){
     var shaderScript = document.getElementById(id);
+    console.log(shaderScript);
     if (!shaderScript){
         return null;
     }
@@ -240,7 +241,8 @@ function getShader(gl, id){
     return shader;
 }
 
-function initShaders(mesh){
+function initShaders(){
+    console.log(222);
     var fragmentShader = getShader(gl, "shader-fs");
     var vertexShader = getShader(gl, "shader-vs");
 
@@ -279,24 +281,6 @@ function initShaders(mesh){
 }
 
 function setupBuffer(){
-    // for(let i = 0; i < data.length; i++){
-    //     var posBuffer_tmp = gl.createBuffer();
-    //     posBuffer.push(posBuffer_tmp);
-    //     var tangBuffer_tmp = gl.createBuffer();
-    //     tangBuffer.push(tangBuffer_tmp);
-    //     var bitTangBuffer_tmp = gl.createBuffer();
-    //     bitTangBuffer.push(bitTangBuffer_tmp);
-    //     var uvs_tmp = gl.createBuffer();
-    //     uvs.push(uvs_tmp);
-    //     var ambient_buffer_tmp = gl.createBuffer();
-    //     ambient_buffer.push(ambient_buffer_tmp);
-    //     var diffuse_buffer_tmp = gl.createBuffer();
-    //     diffuse_buffer.push(diffuse_buffer_tmp);
-    //     var spec_buffer_tmp = gl.createBuffer();
-    //     spec_buffer.push(spec_buffer_tmp);
-    //     var index_buffer_tmp = gl.createBuffer();
-    //     index_buffer.push(index_buffer_tmp);
-    // }
     posBuffer = gl.createBuffer();
     tangBuffer = gl.createBuffer();
     bitTangBuffer = gl.createBuffer();
@@ -370,19 +354,16 @@ function initBuffers(mesh, index){
     //end
 }
 
-function initTextures(mesh){
+function initTextures(){
     for(let i = 0; i < data.length; i++){
         var mesh = data[i];
-        var tex_src = mesh.textures;
-        var bump_src = mesh.bumpMap;
-        var url_diff, url_norm;
-        for(let i = 0; i < textures_resources.length; i++){
-            if(tex_src == textures_resources[i].file.name){
-                url_diff = textures_resources[i].src;
-            }
-            if(bump_src == textures_resources[i].file.name){
-                url_norm = textures_resources[i].src;
-            }
+        var tex_src;
+        var bump_src;
+        if(mesh.textures){
+            tex_src = getUrl(mesh.textures);
+        }
+        if(mesh.bumpMap){
+            bump_src = getUrl(mesh.bumpMap);
         }
         var isBump = mesh.isBump;
 
@@ -396,8 +377,8 @@ function initTextures(mesh){
         }else{
             is_diffuse = 0;
         }
-        text_diffuse.push(load_textures(url_diff));
-        text_norm.push(load_textures(url_norm));
+        text_diffuse.push(load_textures(tex_src));
+        text_norm.push(load_textures(bump_src));
     }
 }
 
@@ -818,7 +799,6 @@ function webGLStart(meshes){
         event.preventDefault();
     }, false);
     canvas.addEventListener("webglcontextrestored", function(){
-        console.log(111);
         setupWebGLStateAndResources();
     }, false);
     widthView = canvas.width;
@@ -840,8 +820,22 @@ function webGLStart(meshes){
     tick();
 }
 
+function loadJSon(jsonpath){
+    var xobj = new XMLHttpRequest();
+    xobj.overrideMimeType("application/json");
+    xobj.onreadystatechange = function() {
+        if (this.readyState == 4 && this.status == 200) {
+            data = JSON.parse(this.responseText);
+            webGLStart(data);
+
+        }
+    }
+    xobj.open("GET", jsonpath, true);
+    xobj.send();
+}
+
 function setupWebGLStateAndResources(){
-    webGLStart(data);
+    loadJSon("http://vietek.com.vn/wp-content/uploads/2018/02/data.txt");
 }
 
 function tick(){
@@ -880,41 +874,38 @@ function drawScene(){
     // mvPopMatrix();
 }
 
-// window.onload = function (){
-//     // OBJ.downloadMeshes({
-//     //     'suzanne': '/development/models/suzanne.obj'
-//     // }, webGLStart);
-//     webGLStart(data);
-// };
-
-var openFile = function(event) {
-    var input = event.target;
-    var selectedFile = event.target.files[0];
-    var t = {};
-    t.file = selectedFile;
-    // textures_resources.push(selectedFile);
-
-    var reader = new FileReader();
-    var models = {};
-    var c = 0;
-    for(let i = 0; i < data.length; i++){
-        if(data[i].isBump){
-            c++;
-        }
-        if(data[i].textures){
-            c++;
-        }
-    }
-    reader.onload = function(){
-        t.src = reader.result;
-        textures_resources.push(t);
-        count ++;
-        if(count == c){
-            console.log(data);
-            webGLStart(data);
-        }
-        
-    };
-    reader.readAsDataURL(selectedFile);
+window.onload = function (){
+    loadJSon("http://vietek.com.vn/wp-content/uploads/2018/02/data.json");
 };
+
+// var openFile = function(event) {
+//     var input = event.target;
+//     var selectedFile = event.target.files[0];
+//     var t = {};
+//     t.file = selectedFile;
+//     // textures_resources.push(selectedFile);
+
+//     var reader = new FileReader();
+//     var models = {};
+//     var c = 0;
+//     for(let i = 0; i < data.length; i++){
+//         if(data[i].isBump){
+//             c++;
+//         }
+//         if(data[i].textures){
+//             c++;
+//         }
+//     }
+//     reader.onload = function(){
+//         t.src = reader.result;
+//         textures_resources.push(t);
+//         count ++;
+//         if(count == c){
+//             console.log(data);
+//             webGLStart(data);
+//         }
+        
+//     };
+//     reader.readAsDataURL(selectedFile);
+// };
 
