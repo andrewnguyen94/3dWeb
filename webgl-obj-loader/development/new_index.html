@@ -140,31 +140,39 @@
 
             // Only perturb the texture coordinates if a parallax technique is selected
             vec2 uv = frag_uv;
-            vec3 albedo = vec3(0,0,0);
             if(is_diffuse != 0){
-                albedo = texture2D(tex_diffuse, uv).rgb;
-            }
-            vec4 ambient = vec4(v_ambient, 1.0);
-            if (type == 0) {
-                // No bump mapping
-                vec3 norm = vec3(0,0,1);
-                // float diffuse = max(dot(light_dir, norm), 0.0);
-                gl_FragColor = vec4(v_diffuse * albedo + v_ambient, 1.0);
+                if (type == 0) {
+                    // No bump mapping
+                    vec3 norm = vec3(0,0,1);
+                    // float diffuse = max(dot(light_dir, norm), 0.0);
+                    gl_FragColor = vec4(v_diffuse + v_ambient, 1.0);
 
-            } else {
-                // Normal mapping
-                vec3 norm = normalize(texture2D(tex_norm, uv).rgb * 2.0 - 1.0);
-                float diffuse = max(dot(light_dir, norm), 0.0);
-                gl_FragColor = vec4(diffuse * albedo + v_ambient, 1.0);
+                } else {
+                    // Normal mapping
+                    vec3 norm = normalize(texture2D(tex_norm, uv).rgb * 2.0 - 1.0);
+                    float diffuse = max(dot(light_dir, norm), 0.0);
+                    gl_FragColor = vec4(diffuse * v_diffuse + v_ambient, 1.0);
+                }
+            }else{
+                if (type == 0) {
+                    // No bump mapping
+                    vec3 norm = vec3(0,0,1);
+                    // float diffuse = max(dot(light_dir, norm), 0.0);
+                    gl_FragColor = vec4(texture2D(tex_diffuse, uv).rgb + v_ambient, 1.0);
+
+                } else {
+                    // Normal mapping
+                    vec3 norm = normalize(texture2D(tex_norm, uv).rgb * 2.0 - 1.0);
+                    float diffuse = max(dot(light_dir, norm), 0.0);
+                    gl_FragColor = vec4(diffuse * texture2D(tex_diffuse, uv).rgb + v_ambient, 1.0);
+                }
             }
-            // vec3 color = vec3(1,1,1);
-            // gl_FragColor = vec4(color, 1.0);
         }
     </script>
     <script type="text/javascript" src="gl-matrix.js"></script>
     <script type='text/javascript' src='../dist/webgl-obj-loader.js'></script>
     <!-- <script src="C:/Users/andrew_nguyen/Downloads/aaa/data.json"></script> -->
-    <script src="D:\Downloads\hohohoho\data.json"></script>
+    <!-- <script src="D:\Downloads\hohohoho\data.json"></script> -->
     <!-- <script type='text/javascript' src='../dist/webgl-obj-loader.min.js'></script> -->
     <script type='text/javascript' src='newapp.js'></script>
 </head>
