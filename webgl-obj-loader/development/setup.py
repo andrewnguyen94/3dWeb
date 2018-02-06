@@ -705,7 +705,7 @@ def main():
 		}
 		datas.append(data)
 
-	with open('D:/3dWeb/webgl-obj-loader/development/hohohoho/data.json', 'w') as outfile:
+	with open('/Volumes/Elements/hohohoho/data.json', 'w') as outfile:
 		try :
 			data = ""
 			if MeshArray:
