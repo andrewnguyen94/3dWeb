@@ -910,4 +910,3 @@ window.onload = function (){
 //     };
 //     reader.readAsDataURL(selectedFile);
 // };
-

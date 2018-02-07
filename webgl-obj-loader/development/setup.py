@@ -689,8 +689,7 @@ def main():
 			'indices' : MeshArray[i].get_indices(),
 		}
 		datas.append(data)
-
-	with open('D:/Downloads/hohohoho/data.json', 'w') as outfile:
+	with open('/Volumes/Elements/hohohoho/data.json', 'w') as outfile:
 		try :
 			data = ""
 			if MeshArray:
