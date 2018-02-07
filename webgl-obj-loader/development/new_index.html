@@ -12,9 +12,10 @@
         attribute vec3 vert_tang;
         attribute vec3 vert_bitang;
         attribute vec2 vert_uv;
-        attribute vec3 ambient;
-        attribute vec3 diffuse;
-        attribute vec3 specular;
+
+        uniform vec3 ambient;
+        uniform vec3 diffuse;
+        uniform vec3 specular;
 
         uniform mat4 model_mtx;
         uniform mat3 norm_mtx;
@@ -145,7 +146,7 @@
                     // No bump mapping
                     vec3 norm = vec3(0,0,1);
                     // float diffuse = max(dot(light_dir, norm), 0.0);
-                    gl_FragColor = vec4(v_diffuse + v_ambient, 1.0);
+                    gl_FragColor = vec4(v_diffuse + v_ambient + v_specular, 1.0);
 
                 } else {
                     // Normal mapping

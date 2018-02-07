@@ -647,9 +647,6 @@ def main():
 
 				mesh.set_tangents(ts)
 				mesh.set_bit_tangents(bts)
-				mesh.set_ambients(ambients)
-				mesh.set_diffuses(diffuses)
-				mesh.set_speculars(speculars)
 
 	for i in range(len(MeshArray)):
 		mesh = MeshArray[i]
@@ -659,29 +656,17 @@ def main():
 			for j in range(len(mesh.get_indicesToRemove())):
 				tangents = mesh.get_tangents()
 				bit_tangent = mesh.get_bit_tangents()
-				ambients = mesh.get_ambients()
-				diffuses = mesh.get_diffuses()
-				speculars = mesh.get_speculars()
 
 				tangents.remove(tangents[(mesh.get_indicesToRemove()[j] - 1) * 3 - count])
 				bit_tangent.remove(bit_tangent[(mesh.get_indicesToRemove()[j] - 1) * 3 - count])
-				speculars.remove(speculars[(mesh.get_indicesToRemove()[j] - 1) * 3 - count])
-				ambients.remove(ambients[(mesh.get_indicesToRemove()[j] - 1) * 3 - count])
-				diffuses.remove(diffuses[(mesh.get_indicesToRemove()[j] - 1) * 3 - count])
 
 				count = count + 3
 				tangents.remove(tangents[(mesh.get_indicesToRemove()[j] - 1) * 3 + 1 - count])
 				bit_tangent.remove(bit_tangent[(mesh.get_indicesToRemove()[j] - 1) * 3 + 1 - count])
-				speculars.remove(speculars[(mesh.get_indicesToRemove()[j] - 1) * 3 + 1 - count])
-				ambients.remove(ambients[(mesh.get_indicesToRemove()[j] - 1) * 3 + 1 - count])
-				diffuses.remove(diffuses[(mesh.get_indicesToRemove()[j] - 1) * 3 + 1 - count])
 
 				count = count + 3
 				tangents.remove(tangents[(mesh.get_indicesToRemove()[j] - 1) * 3 + 2 - count])
 				bit_tangent.remove(bit_tangent[(mesh.get_indicesToRemove()[j] - 1) * 3 + 2 - count])
-				speculars.remove(speculars[(mesh.get_indicesToRemove()[j] - 1) * 3 + 2 - count])
-				ambients.remove(ambients[(mesh.get_indicesToRemove()[j] - 1) * 3 + 2 - count])
-				diffuses.remove(diffuses[(mesh.get_indicesToRemove()[j] - 1) * 3 + 2 - count])
 
 
 
@@ -692,9 +677,9 @@ def main():
 			'verts' : MeshArray[i].get_verts_buff(),
 			'normals' : MeshArray[i].get_norms_buff(),
 			'uvs' : MeshArray[i].get_uvs_buff(),
-			'diffuse' : MeshArray[i].get_diffuses(),
-			'ambient' : MeshArray[i].get_ambients(),
-			'specular' : MeshArray[i].get_speculars(),
+			'diffuse' : MeshArray[i].get_diffuse(),
+			'ambient' : MeshArray[i].get_ambient(),
+			'specular' : MeshArray[i].get_specular(),
 			'alpha' : MeshArray[i].get_alpha(),
 			'isBump' : MeshArray[i].get_is_bump(),
 			'textures' : MeshArray[i].get_text_diff(),
@@ -705,7 +690,7 @@ def main():
 		}
 		datas.append(data)
 
-	with open('D:/3dWeb/webgl-obj-loader/development/hohohoho/data.json', 'w') as outfile:
+	with open('D:/Downloads/hohohoho/data.json', 'w') as outfile:
 		try :
 			data = ""
 			if MeshArray:

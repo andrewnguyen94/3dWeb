@@ -207,7 +207,6 @@ function load_textures(url){
 
 function getShader(gl, id){
     var shaderScript = document.getElementById(id);
-    console.log(shaderScript);
     if (!shaderScript){
         return null;
     }
@@ -242,7 +241,6 @@ function getShader(gl, id){
 }
 
 function initShaders(){
-    console.log(222);
     var fragmentShader = getShader(gl, "shader-fs");
     var vertexShader = getShader(gl, "shader-vs");
 
@@ -262,6 +260,12 @@ function initShaders(){
     shaderProgram.tex_diffuse = gl.getUniformLocation(shaderProgram, "tex_diffuse");
     shaderProgram.type = gl.getUniformLocation(shaderProgram, "type");
     shaderProgram.is_diffuse = gl.getUniformLocation(shaderProgram, "is_diffuse");
+    shaderProgram.attr_amb = gl.getUniformLocation(shaderProgram, "ambient");
+    gl.enableVertexAttribArray(shaderProgram.attr_amb);
+    shaderProgram.attr_diff = gl.getUniformLocation(shaderProgram, "diffuse");
+    gl.enableVertexAttribArray(shaderProgram.attr_diff);
+    shaderProgram.attr_spec = gl.getUniformLocation(shaderProgram, "specular");
+    gl.enableVertexAttribArray(shaderProgram.attr_spec);
 
     shaderProgram.attr_pos = gl.getAttribLocation(shaderProgram, "vert_pos");
     gl.enableVertexAttribArray(shaderProgram.attr_pos);
@@ -271,12 +275,6 @@ function initShaders(){
     gl.enableVertexAttribArray(shaderProgram.attr_bitang);
     shaderProgram.attr_uv = gl.getAttribLocation(shaderProgram, "vert_uv");
     gl.enableVertexAttribArray(shaderProgram.attr_uv);
-    shaderProgram.attr_amb = gl.getAttribLocation(shaderProgram, "ambient");
-    gl.enableVertexAttribArray(shaderProgram.attr_amb);
-    shaderProgram.attr_diff = gl.getAttribLocation(shaderProgram, "diffuse");
-    gl.enableVertexAttribArray(shaderProgram.attr_diff);
-    shaderProgram.attr_spec = gl.getAttribLocation(shaderProgram, "specular");
-    gl.enableVertexAttribArray(shaderProgram.attr_spec);
 
 }
 
@@ -324,27 +322,6 @@ function initBuffers(mesh, index){
     // uvsArr.push(uvs);
     //end uvs
 
-    //ambient
-    
-    gl.bindBuffer(gl.ARRAY_BUFFER, ambient_buffer);
-    var amb = mesh.ambient;
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(amb), gl.STATIC_DRAW);
-    //end
-
-    //diffuse
-    
-    gl.bindBuffer(gl.ARRAY_BUFFER, diffuse_buffer);
-    var diff = mesh.diffuse;
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(diff), gl.STATIC_DRAW);
-    //end
-
-    //specular
-    
-    gl.bindBuffer(gl.ARRAY_BUFFER, spec_buffer);
-    var spec = mesh.specular;
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(spec), gl.STATIC_DRAW);
-    //end
-
     //index buffer
     var indices = mesh.indices;
     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, index_buffer);
@@ -352,6 +329,28 @@ function initBuffers(mesh, index){
     index_buffer.numItems = indices.length;
     // num_indices.push(num_index);
     //end
+
+    // //ambient
+    
+    // gl.bindBuffer(gl.ARRAY_BUFFER, ambient_buffer);
+    // var amb = mesh.ambient;
+    // console.log(amb);
+    // gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(amb), gl.STATIC_DRAW);
+    // //end
+
+    // //diffuse
+    
+    // gl.bindBuffer(gl.ARRAY_BUFFER, diffuse_buffer);
+    // var diff = mesh.diffuse;
+    // gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(diff), gl.STATIC_DRAW);
+    // //end
+
+    // //specular
+    
+    // gl.bindBuffer(gl.ARRAY_BUFFER, spec_buffer);
+    // var spec = mesh.specular;
+    // gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(spec), gl.STATIC_DRAW);
+    // //end
 }
 
 function initTextures(){
@@ -382,7 +381,7 @@ function initTextures(){
     }
 }
 
-function drawObject(index){
+function drawObject(mesh,index){
     /*
      Takes in a model that points to a mesh and draws the object on the scene.
      Assumes that the setMatrixUniforms function exists
@@ -398,6 +397,9 @@ function drawObject(index){
     gl.uniformMatrix3fv(shaderProgram.nMatrixUniform, false, normalMatrix);
     gl.uniform1i(shaderProgram.type, type);
     gl.uniform1i(shaderProgram.is_diffuse, is_diffuse);
+    gl.uniform3fv(shaderProgram.ambient, mesh.ambient);
+    gl.uniform3fv(shaderProgram.diffuse, mesh.diffuse);
+    gl.uniform3fv(shaderProgram.specular, mesh.specular);
     //active textures
     if(text_norm[index] != undefined && text_diffuse[index] != undefined){
         gl.activeTexture(gl.TEXTURE0);
@@ -430,16 +432,16 @@ function drawObject(index){
     gl.bindBuffer(gl.ARRAY_BUFFER, uvs);
     gl.vertexAttribPointer(shaderProgram.attr_uv, 2, gl.FLOAT, false, 0, 0);
 
-    gl.bindBuffer(gl.ARRAY_BUFFER, ambient_buffer);
-    gl.vertexAttribPointer(shaderProgram.attr_amb, 3, gl.FLOAT, false, 0, 0);
-
-    gl.bindBuffer(gl.ARRAY_BUFFER, diffuse_buffer);
-    gl.vertexAttribPointer(shaderProgram.attr_diff, 3, gl.FLOAT, false, 0, 0);
-
-    gl.bindBuffer(gl.ARRAY_BUFFER, spec_buffer);
-    gl.vertexAttribPointer(shaderProgram.attr_spec, 3, gl.FLOAT, false, 0, 0);
-
     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, index_buffer);
+
+    // gl.bindBuffer(gl.ARRAY_BUFFER, ambient_buffer);
+    // gl.vertexAttribPointer(shaderProgram.attr_amb, 3, gl.FLOAT, false, 0, 0);
+
+    // gl.bindBuffer(gl.ARRAY_BUFFER, diffuse_buffer);
+    // gl.vertexAttribPointer(shaderProgram.attr_diff, 3, gl.FLOAT, false, 0, 0);
+
+    // gl.bindBuffer(gl.ARRAY_BUFFER, spec_buffer);
+    // gl.vertexAttribPointer(shaderProgram.attr_spec, 3, gl.FLOAT, false, 0, 0);
 
     gl.drawElements(gl.TRIANGLES, index_buffer.numItems, gl.UNSIGNED_SHORT, 0); 
 }
@@ -866,7 +868,7 @@ function drawScene(){
         if(mesh.indices.length){
             initBuffers(mesh,i);
             gl.useProgram(shaderProgram);
-            drawObject(i);
+            drawObject(mesh,i);
         }
     }
     // requestAnimFrame(drawScene);
