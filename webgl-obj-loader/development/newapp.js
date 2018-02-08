@@ -365,19 +365,22 @@ function initTextures(){
             bump_src = getUrl(mesh.bumpMap);
         }
         var isBump = mesh.isBump;
+        var isText = mesh.isText;
+        if(isText){
+            if(mesh.bumpMap){
+                type = 1;
+            }else{
+                type = 0;
+            }
+            if(mesh.textures){
+                is_diffuse = 1;
+            }else{
+                is_diffuse = 0;
+            }
+            text_diffuse.push(load_textures(tex_src));
+            text_norm.push(load_textures(bump_src));
+        }
 
-        if(mesh.bumpMap){
-            type = 1;
-        }else{
-            type = 0;
-        }
-        if(mesh.textures){
-            is_diffuse = 1;
-        }else{
-            is_diffuse = 0;
-        }
-        text_diffuse.push(load_textures(tex_src));
-        text_norm.push(load_textures(bump_src));
     }
 }
 
