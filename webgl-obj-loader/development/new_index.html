@@ -170,7 +170,7 @@
             }
         }
     </script>
-    <script id="shader-vs" type="x-shader/x-vertex">
+    <script id="shader-vs-default" type="x-shader/x-vertex">
         precision highp float;
 
         attribute vec3 aVertexPosition;
@@ -204,24 +204,27 @@
             }
         }
     </script>
-    <script id = "shader-fs" type="x-shader/x-fragment">
+    <script id = "shader-fs-default" type="x-shader/x-fragment">
         precision highp float;
         varying vec2 vTextureCoord;
         varying vec3 vLightWeighting;
 
-        uniform sampler2D tex_norm;
         uniform sampler2D tex_diffuse;
-        uniform int type;
+        // uniform int type;
         uniform int is_diffuse;
+        uniform float alpha;
 
         varying vec2 vTextureCoord;
         varying vec3 vLightWeighting;
 
         void main(void){
-            if(type != 0){
-                
+            if(is_diffuse){
+                vec4 textureColor = texture2D(tex_diffuse, vec2(vTextureCoord.s, vTextureCoord.t));
+                gl_FragColor = vec4(textureColor.rgb * vLightWeighting, alpha);
+            }else{
+                vec3 textureColor = vec3(0,0,0);
+                gl_FragColor = vec4(textureColor.rgb * vLightWeighting, alpha);
             }
-            vec4 textureColor = texture2D();
         }
     </script>
     <script type="text/javascript" src="gl-matrix.js"></script>

@@ -276,6 +276,24 @@ function initShaders(){
     shaderProgram.attr_uv = gl.getAttribLocation(shaderProgram, "vert_uv");
     gl.enableVertexAttribArray(shaderProgram.attr_uv);
 
+    var fragmentShaderDefault = getShader(gl, "shader-fs-default");
+    var vertexShadeDefault = getShader(gl, "shader-vs-default");
+
+    shaderProgramDefault = gl.createProgram();
+    gl.attachShader(shaderProgramDefault, vertexShadeDefault);
+    gl.attachShader(shaderProgramDefault, fragmentShaderDefault);
+    gl.linkProgram(shaderProgramDefault);
+
+    if(!gl.getProgramParameter(shaderProgramDefault, gl.LINK_STATUS)){
+        alert("Could not initialise shaders default");
+    }
+
+    shaderProgramDefault.pMatrixUniform = gl.getUniformLocation(shaderProgramDefault, "uPMatrix");
+    shaderProgramDefault.mvMatrixUniform = gl.getUniformLocation(shaderProgramDefault, "uMVMatrix");
+    shaderProgramDefault.nMatrixUniform = gl.getUniformLocation(shaderProgramDefault, "uNMatrix");
+
+    shaderProgramDefault.is_diffuse = gl.getUniformLocation(shaderProgramDefault, "is_diffuse");
+    shaderProgramDefault.alpha = gl.getUniformLocation(shaderProgramDefault, "alpha");
 }
 
 function setupBuffer(){
