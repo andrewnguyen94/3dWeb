@@ -276,24 +276,28 @@ function initShaders(){
     shaderProgram.attr_uv = gl.getAttribLocation(shaderProgram, "vert_uv");
     gl.enableVertexAttribArray(shaderProgram.attr_uv);
 
-    var fragmentShaderDefault = getShader(gl, "shader-fs-default");
-    var vertexShadeDefault = getShader(gl, "shader-vs-default");
+    // var fragmentShaderDefault = getShader(gl, "shader-fs-default");
+    // var vertexShadeDefault = getShader(gl, "shader-vs-default");
 
-    shaderProgramDefault = gl.createProgram();
-    gl.attachShader(shaderProgramDefault, vertexShadeDefault);
-    gl.attachShader(shaderProgramDefault, fragmentShaderDefault);
-    gl.linkProgram(shaderProgramDefault);
+    // shaderProgramDefault = gl.createProgram();
+    // gl.attachShader(shaderProgramDefault, vertexShadeDefault);
+    // gl.attachShader(shaderProgramDefault, fragmentShaderDefault);
+    // gl.linkProgram(shaderProgramDefault);
 
-    if(!gl.getProgramParameter(shaderProgramDefault, gl.LINK_STATUS)){
-        alert("Could not initialise shaders default");
-    }
+    // if(!gl.getProgramParameter(shaderProgramDefault, gl.LINK_STATUS)){
+    //     alert("Could not initialise shaders default");
+    // }
 
-    shaderProgramDefault.pMatrixUniform = gl.getUniformLocation(shaderProgramDefault, "uPMatrix");
-    shaderProgramDefault.mvMatrixUniform = gl.getUniformLocation(shaderProgramDefault, "uMVMatrix");
-    shaderProgramDefault.nMatrixUniform = gl.getUniformLocation(shaderProgramDefault, "uNMatrix");
+    // shaderProgramDefault.pMatrixUniform = gl.getUniformLocation(shaderProgramDefault, "uPMatrix");
+    // shaderProgramDefault.mvMatrixUniform = gl.getUniformLocation(shaderProgramDefault, "uMVMatrix");
+    // shaderProgramDefault.nMatrixUniform = gl.getUniformLocation(shaderProgramDefault, "uNMatrix");
 
-    shaderProgramDefault.is_diffuse = gl.getUniformLocation(shaderProgramDefault, "is_diffuse");
-    shaderProgramDefault.alpha = gl.getUniformLocation(shaderProgramDefault, "alpha");
+    // shaderProgramDefault.is_diffuse = gl.getUniformLocation(shaderProgramDefault, "is_diffuse");
+    // shaderProgramDefault.alpha = gl.getUniformLocation(shaderProgramDefault, "alpha");
+    // shaderProgramDefault.ambientColor = gl.getUniformLocation(shaderProgramDefault, "uAmbientColor");
+    // shaderProgramDefault.lightDirection = gl.getUniformLocation(shaderProgramDefault, "uLightingDirection");
+    // shaderProgramDefault.directionalColor = gl.getUniformLocation(shaderProgramDefault, "uDirectionalColor");
+    // shaderProgramDefault.useLighting = gl.getUniformLocation(shaderProgramDefault, "uUseLighting");
 }
 
 function setupBuffer(){
@@ -849,6 +853,7 @@ function loadJSon(jsonpath){
     xobj.onreadystatechange = function() {
         if (this.readyState == 4 && this.status == 200) {
             data = JSON.parse(this.responseText);
+            console.log(data);
             webGLStart(data);
 
         }
